@@ -47,37 +47,4 @@ jobs:
 
   deploy-docs:
     needs: release
-    runs-on: ubuntu-latest
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
-    steps:
-      - uses: actions/checkout@v6
-        with:
-          ref: main
-
-      - uses: actions/setup-node@v6
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: |
-            package-lock.json
-            docs/package-lock.json
-
-      - run: npm ci
-      - run: npm run build
-
-      - run: npm ci
-        working-directory: docs
-      - run: npm run build
-        working-directory: docs
-
-      - uses: actions/upload-pages-artifact@v4
-        with:
-          path: docs/build
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+    uses: ./.github/workflows/deploy-docs.yml
