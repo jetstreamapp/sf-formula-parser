@@ -1,3 +1,4 @@
+import path from 'path';
 import { themes as prismThemes } from 'prism-react-renderer';
 import type { Config } from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
@@ -25,6 +26,23 @@ const config: Config = {
     defaultLocale: 'en',
     locales: ['en'],
   },
+
+  plugins: [
+    function aliasPlugin() {
+      return {
+        name: 'alias-local-package',
+        configureWebpack() {
+          return {
+            resolve: {
+              alias: {
+                '@jetstreamapp/sf-formula-parser': path.resolve(__dirname, '..', 'dist', 'esm', 'index.mjs'),
+              },
+            },
+          };
+        },
+      };
+    },
+  ],
 
   presets: [
     [

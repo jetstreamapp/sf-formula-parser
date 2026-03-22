@@ -10,7 +10,6 @@
   },
   "hooks": {
     "before:init": ["npm test"],
-    "after:bump": "npm run build",
-    "after:release": "cd docs && npm install && npm run build && npm run deploy"
+    "after:bump": "npm run build"
   }
 }
