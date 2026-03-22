@@ -1,0 +1,64 @@
+{
+  "name": "@jetstreamapp/sf-formula-parser",
+  "version": "0.1.0",
+  "description": "Salesforce formula parser and evaluator — parse and execute Salesforce formula expressions in JavaScript",
+  "main": "dist/cjs/index.js",
+  "module": "dist/esm/index.mjs",
+  "types": "dist/types/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/types/index.d.ts",
+      "require": "./dist/cjs/index.js",
+      "import": "./dist/esm/index.mjs"
+    }
+  },
+  "scripts": {
+    "clean": "rm -rf ./dist/*",
+    "prebuild": "npm run clean",
+    "build": "npm-run-all build:esm build:lwc build:cjs build:declarations",
+    "build:esm": "esbuild src/index.ts --bundle --outfile=dist/esm/index.mjs --minify --format=esm --target=es2022",
+    "build:lwc": "esbuild src/index.ts --bundle --outfile=dist/lwc/index.js --format=esm --target=es2022",
+    "build:cjs": "esbuild src/index.ts --bundle --outfile=dist/cjs/index.js --minify --format=cjs --target=es2022",
+    "build:declarations": "tsc --project tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
+    "verify:formulas": "npx tsx scripts/formula-verify/verify.ts",
+    "release": "release-it"
+  },
+  "author": "Austin Turner <austin@getjetstream.app>",
+  "license": "MIT",
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist/**",
+    "LICENSE.txt",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "devDependencies": {
+    "esbuild": "^0.27.4",
+    "npm-run-all": "^4.1.5",
+    "prettier": "^3.8.1",
+    "release-it": "^19.2.4",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.1"
+  },
+  "keywords": [
+    "salesforce",
+    "formula",
+    "parser",
+    "evaluator",
+    "sf",
+    "apex",
+    "soql",
+    "lwc"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jetstreamapp/sf-formula-parser.git"
+  }
+}

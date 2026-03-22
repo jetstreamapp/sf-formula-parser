@@ -1,0 +1,342 @@
+{
+  "tests": [
+    {
+      "id": "precedence-1",
+      "formula": "2 * 3 ^ 4",
+      "returnType": "DECIMAL",
+      "description": "Exponent precedence: * binds tighter than ^ in SF",
+      "ourExpected": 1296
+    },
+    {
+      "id": "precedence-2",
+      "formula": "2 ^ 3 ^ 2",
+      "returnType": "DECIMAL",
+      "description": "Left-associative exponent",
+      "ourExpected": 64
+    },
+    {
+      "id": "ceiling-neg",
+      "formula": "CEILING(-1.3)",
+      "returnType": "DECIMAL",
+      "description": "CEILING rounds toward zero for negatives",
+      "ourExpected": -1
+    },
+    {
+      "id": "floor-neg",
+      "formula": "FLOOR(-2.5)",
+      "returnType": "DECIMAL",
+      "description": "FLOOR rounds toward zero for negatives",
+      "ourExpected": -2
+    },
+    {
+      "id": "round-near-zero",
+      "formula": "ROUND(0.003, 2)",
+      "returnType": "DECIMAL",
+      "description": "ROUND near zero special handling",
+      "ourExpected": 0
+    },
+    {
+      "id": "round-half-up",
+      "formula": "ROUND(2.5, 0)",
+      "returnType": "DECIMAL",
+      "description": "ROUND uses half-up (away from zero)",
+      "ourExpected": 3
+    },
+    {
+      "id": "round-negative-scale",
+      "formula": "ROUND(12345, -2)",
+      "returnType": "DECIMAL",
+      "description": "ROUND with negative scale",
+      "ourExpected": 12300
+    },
+    {
+      "id": "mod-sign",
+      "formula": "MOD(-7, 3)",
+      "returnType": "DECIMAL",
+      "description": "MOD sign follows dividend",
+      "ourExpected": -1
+    },
+    {
+      "id": "and-null",
+      "formula": "IF(AND(TRUE, NULL), 'yes', 'no')",
+      "returnType": "STRING",
+      "description": "AND treats null as false",
+      "ourExpected": "no"
+    },
+    {
+      "id": "or-null",
+      "formula": "IF(OR(FALSE, NULL), 'yes', 'no')",
+      "returnType": "STRING",
+      "description": "OR skips null args",
+      "ourExpected": "no"
+    },
+    {
+      "id": "not-null",
+      "formula": "IF(NOT(NULL), 'yes', 'no')",
+      "returnType": "STRING",
+      "description": "NOT(null) -> null -> IF treats as false",
+      "ourExpected": "no"
+    },
+    {
+      "id": "string-concat-null",
+      "formula": "NULL & 'abc'",
+      "returnType": "STRING",
+      "description": "Null treated as empty string in concat",
+      "ourExpected": "abc"
+    },
+    {
+      "id": "if-lazy",
+      "formula": "IF(FALSE, 1/0, 42)",
+      "returnType": "DECIMAL",
+      "description": "IF lazy evaluation - dead branch not evaluated",
+      "ourExpected": 42
+    },
+    {
+      "id": "text-number",
+      "formula": "TEXT(123456)",
+      "returnType": "STRING",
+      "description": "TEXT formats number",
+      "ourExpected": "123456"
+    },
+    {
+      "id": "len-null",
+      "formula": "LEN(NULL)",
+      "returnType": "DECIMAL",
+      "description": "LEN(null) = 0 (exception to null propagation)",
+      "ourExpected": 0
+    },
+    {
+      "id": "begins-null-search",
+      "formula": "IF(BEGINS('abc', NULL), 'yes', 'no')",
+      "returnType": "STRING",
+      "description": "BEGINS with null search returns true",
+      "ourExpected": "yes"
+    },
+    {
+      "id": "contains-null-search",
+      "formula": "IF(CONTAINS('abc', NULL), 'yes', 'no')",
+      "returnType": "STRING",
+      "description": "CONTAINS with null search returns true",
+      "ourExpected": "yes"
+    },
+    {
+      "id": "find-basic",
+      "formula": "FIND('b', 'abc')",
+      "returnType": "DECIMAL",
+      "description": "FIND returns 1-based position",
+      "ourExpected": 2
+    },
+    {
+      "id": "mid-basic",
+      "formula": "MID('abcdef', 2, 3)",
+      "returnType": "STRING",
+      "description": "MID is 1-based",
+      "ourExpected": "bcd"
+    },
+    {
+      "id": "case-basic",
+      "formula": "CASE(2, 1, 'one', 2, 'two', 'other')",
+      "returnType": "STRING",
+      "description": "CASE value matching",
+      "ourExpected": "two"
+    },
+    {
+      "id": "ifs-basic",
+      "formula": "IFS(1>2, 'a', 2>1, 'b', 'c')",
+      "returnType": "STRING",
+      "description": "IFS picks first true condition",
+      "ourExpected": "b",
+      "skip": true,
+      "skipReason": "IFS not supported by FormulaEval API — works in real formula fields"
+    },
+    {
+      "id": "mceiling-neg",
+      "formula": "MCEILING(-2.5)",
+      "returnType": "DECIMAL",
+      "description": "MCEILING is Math.ceil (toward +infinity)",
+      "ourExpected": -2
+    },
+    {
+      "id": "mfloor-neg",
+      "formula": "MFLOOR(-2.5)",
+      "returnType": "DECIMAL",
+      "description": "MFLOOR is Math.floor (toward -infinity)",
+      "ourExpected": -3
+    },
+    {
+      "id": "addmonths-eom",
+      "formula": "TEXT(ADDMONTHS(DATE(2020,1,31), 1))",
+      "returnType": "STRING",
+      "description": "ADDMONTHS end-of-month semantics",
+      "ourExpected": "2020-02-29"
+    },
+    {
+      "id": "addmonths-leap",
+      "formula": "TEXT(ADDMONTHS(DATE(2016,1,31), 1))",
+      "returnType": "STRING",
+      "description": "ADDMONTHS leap year end-of-month",
+      "ourExpected": "2016-02-29"
+    },
+    {
+      "id": "weekday-sunday",
+      "formula": "WEEKDAY(DATE(2024, 1, 7))",
+      "returnType": "DECIMAL",
+      "description": "WEEKDAY: Sunday = 1",
+      "ourExpected": 1
+    },
+    {
+      "id": "weekday-saturday",
+      "formula": "WEEKDAY(DATE(2024, 1, 13))",
+      "returnType": "DECIMAL",
+      "description": "WEEKDAY: Saturday = 7",
+      "ourExpected": 7
+    },
+    {
+      "id": "substitute-all",
+      "formula": "SUBSTITUTE('abc abc', 'abc', 'xyz')",
+      "returnType": "STRING",
+      "description": "SUBSTITUTE replaces all occurrences",
+      "ourExpected": "xyz xyz"
+    },
+    {
+      "id": "regex-full-match",
+      "formula": "IF(REGEX('abc123', '[a-z]+[0-9]+'), 'yes', 'no')",
+      "returnType": "STRING",
+      "description": "REGEX is full-string match",
+      "ourExpected": "yes"
+    },
+    {
+      "id": "regex-partial-no-match",
+      "formula": "IF(REGEX('abc123xyz', '[0-9]+'), 'yes', 'no')",
+      "returnType": "STRING",
+      "description": "REGEX rejects partial match",
+      "ourExpected": "no"
+    },
+    {
+      "id": "blankvalue-null",
+      "formula": "BLANKVALUE(NULL, 'default')",
+      "returnType": "STRING",
+      "description": "BLANKVALUE returns default for null",
+      "ourExpected": "default"
+    },
+    {
+      "id": "isnumber-valid",
+      "formula": "IF(ISNUMBER('123'), 'yes', 'no')",
+      "returnType": "STRING",
+      "description": "ISNUMBER on valid number string",
+      "ourExpected": "yes"
+    },
+    {
+      "id": "isnumber-invalid",
+      "formula": "IF(ISNUMBER('abc'), 'yes', 'no')",
+      "returnType": "STRING",
+      "description": "ISNUMBER on non-number string",
+      "ourExpected": "no"
+    },
+    {
+      "id": "abs-negative",
+      "formula": "ABS(-42)",
+      "returnType": "DECIMAL",
+      "description": "ABS of negative number",
+      "ourExpected": 42
+    },
+    {
+      "id": "power-basic",
+      "formula": "POWER(2, 10)",
+      "returnType": "DECIMAL",
+      "description": "POWER function",
+      "ourExpected": 1024
+    },
+    {
+      "id": "max-basic",
+      "formula": "MAX(3, 7)",
+      "returnType": "DECIMAL",
+      "description": "MAX of two numbers",
+      "ourExpected": 7
+    },
+    {
+      "id": "min-basic",
+      "formula": "MIN(3, 7)",
+      "returnType": "DECIMAL",
+      "description": "MIN of two numbers",
+      "ourExpected": 3
+    },
+    {
+      "id": "left-basic",
+      "formula": "LEFT('abcdef', 3)",
+      "returnType": "STRING",
+      "description": "LEFT function",
+      "ourExpected": "abc"
+    },
+    {
+      "id": "right-basic",
+      "formula": "RIGHT('abcdef', 3)",
+      "returnType": "STRING",
+      "description": "RIGHT function",
+      "ourExpected": "def"
+    },
+    {
+      "id": "upper-lower",
+      "formula": "UPPER('hello') & LOWER(' WORLD')",
+      "returnType": "STRING",
+      "description": "UPPER and LOWER with concat",
+      "ourExpected": "HELLO world"
+    },
+    {
+      "id": "lpad-basic",
+      "formula": "LPAD('abc', 6, 'x')",
+      "returnType": "STRING",
+      "description": "LPAD left-pads with character",
+      "ourExpected": "xxxabc"
+    },
+    {
+      "id": "rpad-basic",
+      "formula": "RPAD('abc', 6, 'x')",
+      "returnType": "STRING",
+      "description": "RPAD right-pads with character",
+      "ourExpected": "abcxxx"
+    },
+    {
+      "id": "date-construct",
+      "formula": "TEXT(DATE(2024, 6, 15))",
+      "returnType": "STRING",
+      "description": "DATE construction and TEXT formatting",
+      "ourExpected": "2024-06-15"
+    },
+    {
+      "id": "year-month-day",
+      "formula": "YEAR(DATE(2024, 6, 15)) * 10000 + MONTH(DATE(2024, 6, 15)) * 100 + DAY(DATE(2024, 6, 15))",
+      "returnType": "DECIMAL",
+      "description": "YEAR, MONTH, DAY extraction",
+      "ourExpected": 20240615
+    },
+    {
+      "id": "complex-nested",
+      "formula": "IF(AND(100 > 0, NOT(ISBLANK('Acme'))), UPPER(LEFT('Acme', 3)) & '-' & TEXT(ROUND(100, 0)), 'N/A')",
+      "returnType": "STRING",
+      "description": "Complex nested formula with multiple function categories",
+      "ourExpected": "ACM-100"
+    },
+    {
+      "id": "ceiling-float-edge",
+      "formula": "CEILING(6/11*11)",
+      "returnType": "DECIMAL",
+      "description": "CEILING with float noise: 6/11*11 should be 6 not 7",
+      "ourExpected": 6
+    },
+    {
+      "id": "trunc-basic",
+      "formula": "TRUNC(2.7, 0)",
+      "returnType": "DECIMAL",
+      "description": "TRUNC truncates toward zero",
+      "ourExpected": 2
+    },
+    {
+      "id": "trunc-negative",
+      "formula": "TRUNC(-2.7, 0)",
+      "returnType": "DECIMAL",
+      "description": "TRUNC negative truncates toward zero",
+      "ourExpected": -2
+    }
+  ]
+}
