@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [0.1.0] - Unreleased
+## 1.0.0
 
 ### Added
 
@@ -20,3 +20,4 @@ All notable changes to this project will be documented in this file.
 - Zero production dependencies
 - 883 unit/integration tests
 - Verified against live Salesforce org (47/47 FormulaEval API tests passing)
+- Added documentation site

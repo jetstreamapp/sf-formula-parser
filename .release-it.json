@@ -5,6 +5,9 @@
   "github": {
     "release": true
   },
+  "npm": {
+    "publishArgs": ["--provenance"]
+  },
   "hooks": {
     "before:init": ["npm test"],
     "after:bump": "npm run build",
