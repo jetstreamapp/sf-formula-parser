@@ -1,6 +1,6 @@
 {
   "name": "@jetstreamapp/sf-formula-parser",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Salesforce formula parser and evaluator — parse and execute Salesforce formula expressions in JavaScript",
   "main": "dist/cjs/index.js",
   "module": "dist/esm/index.mjs",
