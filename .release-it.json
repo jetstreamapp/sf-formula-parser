@@ -6,7 +6,7 @@
     "release": true
   },
   "npm": {
-    "publishArgs": ["--provenance"]
+    "skipChecks": true
   },
   "hooks": {
     "before:init": ["npm test"],
