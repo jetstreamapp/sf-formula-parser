@@ -10,6 +10,10 @@
 
 A JavaScript/TypeScript implementation of the Salesforce formula language. Parses formula strings into an AST and evaluates them against a record context — entirely client-side, with zero dependencies.
 
+[Documentation](https://sf-formula-parser.getjetstream.app/)
+
+[npm](https://www.npmjs.com/package/@jetstreamapp/sf-formula-parser)
+
 ## Why?
 
 Salesforce formulas are powerful, but evaluating them outside of Salesforce (in custom UIs, offline tools, testing harnesses, or migration scripts) has historically required either round-tripping to the API or reimplementing logic by hand. This library gives you a spec-faithful formula engine that runs anywhere JavaScript runs — browsers, Node.js, edge functions.

@@ -42,6 +42,16 @@ const config: Config = {
         },
       };
     },
+    [
+      'docusaurus-plugin-llms',
+      {
+        title: 'sf-formula-parser',
+        description:
+          'A TypeScript library for parsing and evaluating Salesforce formulas outside of Salesforce. Supports 90+ built-in functions, record context, related records, global variables, and prior value detection.',
+        generateLLMsTxt: true,
+        generateLLMsFullTxt: true,
+      },
+    ],
   ],
 
   presets: [
