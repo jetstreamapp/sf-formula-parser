@@ -10,6 +10,10 @@ Run prettier on any modified files.
 
 We maintain very high test coverage, add tests for any changes.
 
+## Releasing
+
+Make sure to update the CHANGELOG.md for changes to the library (not needed for chore/docs, only core library changes)
+
 ## Documentation
 
 Make sure all changes are represented in the documentation as appropriate.

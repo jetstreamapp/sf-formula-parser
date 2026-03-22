@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## 1.1.0 (2026-03-22)
+
+### Added
+
+- `extractFields(formula)` — extract field references from a formula string without evaluating
+- `extractFieldsByCategory(formula)` — extract and categorize fields by `$`-prefix (objectFields, globals, customMetadata, customLabels, customSettings, customPermissions)
+- `walkAST(node, visitor)` — generic AST walker utility
+- docusaurus-plugin-llms for enhanced documentation support
+
 ## 1.0.0
 
 ### Added
