@@ -87,6 +87,82 @@ const registry = createDefaultRegistry();
 
 ---
 
+### `extractFields(formula)`
+
+Extract all field references from a formula string without evaluating it. Returns a deduplicated array of field names in the order they appear. Useful for determining which fields to query before evaluation.
+
+```typescript
+import { extractFields } from '@jetstreamapp/sf-formula-parser';
+
+const fields = extractFields('IF(Amount > 100, $User.FirstName, Name)');
+// ['Amount', '$User.FirstName', 'Name']
+```
+
+**Parameters:**
+
+| Parameter | Type     | Description                   |
+| --------- | -------- | ----------------------------- |
+| `formula` | `string` | The Salesforce formula string |
+
+**Returns:** `string[]` — deduplicated array of dot-joined field reference strings.
+
+---
+
+### `extractFieldsByCategory(formula)`
+
+Extract and categorize field references from a formula string. Fields are grouped by their `$`-prefix into object fields, globals, custom metadata, custom labels, custom settings, and custom permissions.
+
+```typescript
+import { extractFieldsByCategory } from '@jetstreamapp/sf-formula-parser';
+
+const result = extractFieldsByCategory('IF($User.IsActive, $Label.Greeting & " " & Name, $Setup.Default__c.Value__c)');
+// {
+//   objectFields: ['Name'],
+//   globals: { '$User': ['$User.IsActive'] },
+//   customMetadata: [],
+//   customLabels: ['$Label.Greeting'],
+//   customSettings: ['$Setup.Default__c.Value__c'],
+//   customPermissions: [],
+// }
+```
+
+**Parameters:**
+
+| Parameter | Type     | Description                   |
+| --------- | -------- | ----------------------------- |
+| `formula` | `string` | The Salesforce formula string |
+
+**Returns:** `ExtractedFields` — categorized field references.
+
+---
+
+### `walkAST(node, visitor)`
+
+Walk an AST tree in pre-order, calling the visitor function on each node. Useful for building custom analysis tools on top of the parsed AST.
+
+```typescript
+import { parseFormula, walkAST } from '@jetstreamapp/sf-formula-parser';
+
+const ast = parseFormula('IF(Amount > 100, Name, "default")');
+const functionNames: string[] = [];
+
+walkAST(ast, node => {
+  if (node.type === 'FunctionCall') {
+    functionNames.push(node.name);
+  }
+});
+// functionNames: ['IF']
+```
+
+**Parameters:**
+
+| Parameter | Type                      | Description                        |
+| --------- | ------------------------- | ---------------------------------- |
+| `node`    | `ASTNode`                 | The root AST node to start walking |
+| `visitor` | `(node: ASTNode) => void` | Callback invoked on each node      |
+
+---
+
 ## Classes
 
 ### `FunctionRegistry`
@@ -184,6 +260,21 @@ interface EvaluationOptions {
 | --------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------ |
 | `treatBlanksAsZeroes` | `true`       | When `true`, null/blank numeric fields are treated as `0` and blank text fields as `""`. Matches the Salesforce default. |
 | `now`                 | `new Date()` | Override the current timestamp. Useful for deterministic tests with `NOW()` and `TODAY()`.                               |
+
+### `ExtractedFields`
+
+```typescript
+interface ExtractedFields {
+  objectFields: string[]; // Regular fields (no $ prefix)
+  globals: Record<string, string[]>; // e.g. { '$User': ['$User.FirstName'] }
+  customMetadata: string[]; // $CustomMetadata.* fields
+  customLabels: string[]; // $Label.* fields
+  customSettings: string[]; // $Setup.* fields
+  customPermissions: string[]; // $Permission.* fields
+}
+```
+
+Returned by `extractFieldsByCategory()`. The `globals` map uses the original `$`-prefix as the key (e.g., `$User`, `$Organization`, `$Profile`, `$UserRole`, `$System`, `$Api`).
 
 ### `ASTNode`
 

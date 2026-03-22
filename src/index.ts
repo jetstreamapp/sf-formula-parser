@@ -29,3 +29,6 @@ export { FunctionRegistry, createDefaultRegistry } from './functions/registry.js
 export { Parser } from './parser/index.js';
 export { Evaluator } from './evaluator/evaluator.js';
 export { isBlank, isSfTime, isGeoLocation, isDate, toNumber, toText, toBoolean } from './evaluator/coercion.js';
+export { extractFields, extractFieldsByCategory } from './extract.js';
+export type { ExtractedFields } from './extract.js';
+export { walkAST } from './parser/walk.js';

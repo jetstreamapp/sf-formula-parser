@@ -11,3 +11,4 @@ export type {
   BinaryExpressionNode,
 } from './ast.js';
 export { getBindingPower, UNARY_BP } from './precedence.js';
+export { walkAST } from './walk.js';
