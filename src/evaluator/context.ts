@@ -1,3 +1,5 @@
+import type { SchemaInput } from './schema.js';
+
 export interface SfTime {
   timeInMillis: number; // 0–86400000 (ms since midnight, GMT)
 }
@@ -23,9 +25,16 @@ export interface FormulaContext {
   isClone?: boolean;
 }
 
+/** Declared return type for formula validation. */
+export type FormulaReturnType = 'number' | 'string' | 'boolean' | 'date' | 'datetime' | 'time';
+
 export interface EvaluationOptions {
+  /** The expected return type of the formula. When provided, validates the result type matches. */
+  returnType?: FormulaReturnType;
   treatBlanksAsZeroes?: boolean; // default: true
   now?: Date; // override for deterministic tests
+  /** Optional field schema for type-aware validation. Compatible with describeSObject().fields. */
+  schema?: SchemaInput;
 }
 
 /**

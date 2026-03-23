@@ -62,16 +62,26 @@ export const ADDITION_TESTS = [
   { formula: 'null + 37', expected: null, description: 'null propagates in arithmetic' },
   { formula: 'null * 37', expected: null },
   { formula: '3 + null', expected: null },
+  { formula: 'true + true', expected: 'ERROR', description: 'boolean rejected in addition' },
+  { formula: 'true + 1', expected: 'ERROR', description: 'boolean + number rejected' },
+  { formula: '1 + false', expected: 'ERROR', description: 'number + boolean rejected' },
 ];
 
 export const SUBTRACTION_TESTS = [
   { formula: '37-1', expected: 36 },
   { formula: '1-37', expected: -36 },
+  { formula: 'true - 1', expected: 'ERROR', description: 'boolean rejected in subtraction' },
+  { formula: '1 - "test"', expected: 'ERROR', description: 'string rejected in subtraction' },
+  { formula: '"test" - 1', expected: 'ERROR', description: 'string rejected in subtraction (left)' },
+  { formula: '"a" - "b"', expected: 'ERROR', description: 'string - string rejected' },
 ];
 
 export const MULTIPLICATION_TESTS = [
   { formula: '1*37', expected: 37 },
   { formula: 'null*37', expected: null },
+  { formula: 'true * 2', expected: 'ERROR', description: 'boolean rejected in multiplication' },
+  { formula: '"test" * 2', expected: 'ERROR', description: 'string rejected in multiplication' },
+  { formula: '2 * "test"', expected: 'ERROR', description: 'string rejected in multiplication (right)' },
 ];
 
 export const DIVISION_TESTS = [
@@ -80,6 +90,8 @@ export const DIVISION_TESTS = [
   { formula: 'null/4', expected: null },
   // Division by zero should throw an error
   { formula: '1/0', expected: 'ERROR', description: 'division by zero throws' },
+  { formula: 'true / 2', expected: 'ERROR', description: 'boolean rejected in division' },
+  { formula: '"test" / 2', expected: 'ERROR', description: 'string rejected in division' },
 ];
 
 export const EXPONENT_TESTS = [
@@ -88,11 +100,19 @@ export const EXPONENT_TESTS = [
   { formula: '0.0^0.0', expected: 1 },
   // Overflow protection: 64^64 should throw (log10(64)*64 > 64)
   { formula: '64^64', expected: 'ERROR', description: 'power overflow' },
+  { formula: 'true ^ 2', expected: 'ERROR', description: 'boolean rejected in exponent' },
+  { formula: '"test" ^ 2', expected: 'ERROR', description: 'string rejected in exponent' },
 ];
 
 export const UNARY_TESTS = [
   { formula: '+37', expected: 37 },
   { formula: '-37', expected: -37 },
+  { formula: '-true', expected: 'ERROR', description: 'unary minus on boolean rejected' },
+  { formula: '+"hello"', expected: 'ERROR', description: 'unary plus on string rejected' },
+  { formula: '-"hello"', expected: 'ERROR', description: 'unary minus on string rejected' },
+  { formula: '+true', expected: 'ERROR', description: 'unary plus on boolean rejected' },
+  { formula: '!5', expected: 'ERROR', description: 'NOT on number rejected' },
+  { formula: '!"hello"', expected: 'ERROR', description: 'NOT on string rejected' },
 ];
 
 // ============================================================================
@@ -665,6 +685,14 @@ export const DATE_ARITHMETIC_TESTS = [
   { formula: 'date(2005, 4, 5) + (-0.7)', expected: '2005-04-05', description: 'truncated toward zero: +0 days' },
   { formula: 'date(2005, 4, 5) + (-1.9)', expected: '2005-04-04', description: 'truncated toward zero: -1 day' },
 
+  // Date + Date → error (Salesforce rejects this)
+  { formula: 'date(2005, 4, 5) + date(2005, 4, 1)', expected: 'ERROR', description: 'Date + Date rejected' },
+  {
+    formula: 'DATETIMEVALUE("2016-02-29 13:15:10") + DATETIMEVALUE("2016-03-01 13:15:10")',
+    expected: 'ERROR',
+    description: 'DateTime + DateTime rejected',
+  },
+
   // Date - Date (returns number of days)
   { formula: 'date(2005, 4, 5) - date(2005, 4, 1)', expected: 4 },
   { formula: 'date(2005, 4, 10) - date(2005, 4, 9)', expected: 1 },
@@ -680,6 +708,21 @@ export const DATE_ARITHMETIC_TESTS = [
   { formula: 'dateValue(dateTimeValue("2004-12-31 11:32:10")+3.00)', expected: '2005-01-03' },
   { formula: 'dateValue(dateTimeValue("2004-12-31 11:32:10")+3.60)', expected: '2005-01-04' },
   { formula: 'dateValue(dateTimeValue("2004-02-28 10:34:00")+4.60)', expected: '2004-03-04' },
+
+  // Date/Time type guard errors
+  { formula: 'date(2005, 4, 5) + true', expected: 'ERROR', description: 'Date + Boolean rejected' },
+  { formula: '"text" - date(2005, 4, 5)', expected: 'ERROR', description: 'String - Date rejected' },
+  { formula: 'true - date(2005, 4, 5)', expected: 'ERROR', description: 'Boolean - Date rejected' },
+  { formula: 'date(2005, 4, 5) - "text"', expected: 'ERROR', description: 'Date - String rejected' },
+  { formula: 'date(2005, 4, 5) - true', expected: 'ERROR', description: 'Date - Boolean rejected' },
+
+  // Time + Number / Time - Number
+  { formula: 'timeValue("08:34:56.789") + 3600000', expected: 34496789, description: 'Time + 1h in ms' },
+  { formula: 'timeValue("08:34:56.789") - 3600000', expected: 27296789, description: 'Time - 1h in ms' },
+
+  // Time + Time → error (can subtract but not add)
+  { formula: 'timeValue("08:34:56.789") + timeValue("06:34:56.789")', expected: 'ERROR', description: 'Time + Time rejected' },
+  { formula: '"text" - timeValue("08:34:56.789")', expected: 'ERROR', description: 'String - Time rejected' },
 
   // Time arithmetic (milliseconds)
   { formula: 'timeValue("08:34:56.789") - timeValue("06:34:56.789")', expected: 7200000, description: '2h in ms' },

@@ -3,7 +3,8 @@ import type { FormulaValue, FormulaContext, FormulaRecord, EvaluationOptions, Sf
 import { isFormulaValue, isFormulaRecord } from './context.js';
 import { FormulaError } from './errors.js';
 import { FunctionRegistry } from '../functions/registry.js';
-import { isSfTime, isDate, toNumber, toBoolean, toText } from './coercion.js';
+import { isSfTime, isDate, isDateOnly, isGeoLocation, toNumber, toBoolean, toText } from './coercion.js';
+import { SchemaMap, SCHEMA_SELF_KEY, markPicklist, markMultipicklist, isAnyPicklistValue, getPicklistFieldName } from './schema.js';
 
 const MS_PER_DAY = 86_400_000;
 
@@ -11,14 +12,27 @@ export class Evaluator {
   private registry: FunctionRegistry;
   private context: FormulaContext;
   private options: EvaluationOptions;
+  private schemaMap: SchemaMap | null;
 
   constructor(registry: FunctionRegistry, context: FormulaContext, options: EvaluationOptions = {}) {
     this.registry = registry;
     this.context = context;
     this.options = { treatBlanksAsZeroes: true, ...options };
+    this.schemaMap = options.schema ? new SchemaMap(options.schema) : null;
   }
 
+  /** Public evaluation entry point — unwraps internal markers (e.g., picklist boxed strings). */
   evaluate(node: ASTNode): FormulaValue {
+    const result = this.evaluateNode(node);
+    // Unwrap boxed String from picklist markers back to primitive string
+    if (isAnyPicklistValue(result)) {
+      return (result as object).valueOf() as string;
+    }
+    return result;
+  }
+
+  /** Internal evaluation — preserves picklist markers for type checking through the call chain. */
+  private evaluateNode(node: ASTNode): FormulaValue {
     switch (node.type) {
       case 'NumberLiteral':
         return node.value;
@@ -50,28 +64,33 @@ export class Evaluator {
     if (first.startsWith('$')) {
       const globalRecord = this.lookupRelated(this.context.globals ?? {}, first);
       if (!globalRecord) return null;
-      return this.resolveFieldParts(globalRecord, parts.slice(1));
+      // Schema path for globals is the $-prefixed name (e.g., '$User')
+      const schemaPath = first;
+      return this.resolveFieldWithSchema(globalRecord, parts.slice(1), schemaPath);
     }
 
-    // Single-part: direct field lookup
+    // Single-part: direct field lookup on root object
     if (parts.length === 1) {
-      return this.lookupField(this.context.record, first);
+      return this.lookupFieldWithSchema(this.context.record, first, SCHEMA_SELF_KEY);
     }
 
     // Multi-part: traverse nested records, last part is the field name
+    // Schema path = relationship parts joined (e.g., 'Account' or 'Contact.Account')
     let current: FormulaRecord = this.context.record;
     for (let i = 0; i < parts.length - 1; i++) {
       const next = this.lookupRelated(current, parts[i]!);
       if (!next) return null;
       current = next;
     }
-    return this.lookupField(current, parts[parts.length - 1]!);
+    const schemaPath = parts.slice(0, -1).join('.');
+    return this.lookupFieldWithSchema(current, parts[parts.length - 1]!, schemaPath);
   }
 
-  private resolveFieldParts(record: FormulaRecord, parts: string[]): FormulaValue {
+  /** Resolve field parts with schema path tracking. */
+  private resolveFieldWithSchema(record: FormulaRecord, parts: string[], basePath: string): FormulaValue {
     if (parts.length === 0) return null;
     if (parts.length === 1) {
-      return this.lookupField(record, parts[0]!);
+      return this.lookupFieldWithSchema(record, parts[0]!, basePath);
     }
     let current: FormulaRecord = record;
     for (let i = 0; i < parts.length - 1; i++) {
@@ -79,21 +98,59 @@ export class Evaluator {
       if (!next) return null;
       current = next;
     }
-    return this.lookupField(current, parts[parts.length - 1]!);
+    const schemaPath = basePath ? basePath + '.' + parts.slice(0, -1).join('.') : parts.slice(0, -1).join('.');
+    return this.lookupFieldWithSchema(current, parts[parts.length - 1]!, schemaPath);
   }
 
-  /** Case-insensitive field lookup — returns only FormulaValue entries */
-  private lookupField(record: FormulaRecord, name: string): FormulaValue {
+  /** Case-insensitive field lookup with schema validation scoped to a relationship path. */
+  private lookupFieldWithSchema(record: FormulaRecord, name: string, schemaPath: string): FormulaValue {
+    const lower = name.toLowerCase();
+
+    // Schema validation: check field exists if schema is defined for this path
+    if (this.schemaMap) {
+      if (this.schemaMap.hasSchemaFor(schemaPath)) {
+        const fieldInfo =
+          schemaPath === SCHEMA_SELF_KEY ? this.schemaMap.getField(lower) : this.schemaMap.getRelatedField(schemaPath, lower);
+        if (!fieldInfo) {
+          throw new FormulaError(`Field ${name} does not exist. Check spelling.`);
+        }
+      }
+      // If no schema for this path, skip validation (schema not provided for this object)
+    }
+
+    return this.lookupFieldRaw(record, name, schemaPath);
+  }
+
+  /** Case-insensitive field lookup without schema validation. */
+  private lookupFieldRaw(record: FormulaRecord, name: string, schemaPath?: string): FormulaValue {
     const lower = name.toLowerCase();
     for (const key of Object.keys(record)) {
       if (key.toLowerCase() === lower) {
         const val = record[key];
-        if (isFormulaValue(val)) return val ?? null;
+        if (isFormulaValue(val)) {
+          return this.applySchemaMarkers(val ?? null, lower, schemaPath ?? SCHEMA_SELF_KEY);
+        }
         // It's a nested record, not a field value
         return null;
       }
     }
     return null;
+  }
+
+  /** Apply picklist/multipicklist markers based on schema info. */
+  private applySchemaMarkers(value: FormulaValue, fieldNameLower: string, schemaPath: string): FormulaValue {
+    if (!this.schemaMap || value === null) return value;
+    const fieldInfo =
+      schemaPath === SCHEMA_SELF_KEY ? this.schemaMap.getField(fieldNameLower) : this.schemaMap.getRelatedField(schemaPath, fieldNameLower);
+    if (!fieldInfo) return value;
+
+    if (fieldInfo.formulaType === 'picklist' && typeof value === 'string') {
+      return markPicklist(value, fieldNameLower);
+    }
+    if (fieldInfo.formulaType === 'multipicklist' && typeof value === 'string') {
+      return markMultipicklist(value, fieldNameLower);
+    }
+    return value;
   }
 
   /** Case-insensitive related record lookup — returns only nested FormulaRecord entries */
@@ -111,13 +168,42 @@ export class Evaluator {
 
   // ── Function calls ────────────────────────────────────────────────
 
+  // Functions that accept picklist/multipicklist arguments
+  private static readonly PICKLIST_ALLOWED_FUNCTIONS = new Set([
+    'TEXT',
+    'ISPICKVAL',
+    'ISBLANK',
+    'ISNULL',
+    'NULLVALUE',
+    'BLANKVALUE',
+    'CASE',
+    'ISCHANGED',
+    'PRIORVALUE',
+    'INCLUDES', // multipicklist only, but we allow it here and let the function validate
+  ]);
+
   private callFunction(node: FunctionCallNode): FormulaValue {
     const fn = this.registry.get(node.name);
     if (!fn) {
       throw new FormulaError(`Unknown function: ${node.name}`);
     }
+
+    // For functions that don't support picklists, wrap evaluate to reject picklist values
+    const baseEvaluate = (n: ASTNode) => this.evaluateNode(n);
+    const evaluate =
+      this.schemaMap && !Evaluator.PICKLIST_ALLOWED_FUNCTIONS.has(node.name)
+        ? (n: ASTNode) => {
+            const val = baseEvaluate(n);
+            if (isAnyPicklistValue(val)) {
+              const name = getPicklistFieldName(val) ?? 'unknown';
+              throw new FormulaError(`Field ${name} is a picklist field. Picklist fields are only supported in certain functions.`);
+            }
+            return val;
+          }
+        : baseEvaluate;
+
     return fn({
-      evaluate: (n: ASTNode) => this.evaluate(n),
+      evaluate,
       context: this.context,
       options: this.options,
       args: node.args,
@@ -127,26 +213,32 @@ export class Evaluator {
   // ── Unary expressions ─────────────────────────────────────────────
 
   private evalUnary(node: UnaryExpressionNode): FormulaValue {
-    const val = this.evaluate(node.operand);
+    const val = this.evaluateNode(node.operand);
+    this.assertNotPicklistUnary(val);
     switch (node.operator) {
       case '-': {
         if (val === null) return null;
-        const n = toNumber(val);
-        if (n === null) return null;
-        return -n;
+        if (typeof val !== 'number') {
+          throw new FormulaError(`Incorrect parameter type for operator '-'. Expected Number, received ${this.describeType(val)}`);
+        }
+        return -val;
       }
       case '+': {
         if (val === null) return null;
-        const n = toNumber(val);
-        if (n === null) return null;
-        return n;
+        if (typeof val !== 'number') {
+          throw new FormulaError(`Incorrect parameter type for operator '+'. Expected Number, received ${this.describeType(val)}`);
+        }
+        return val;
       }
       case '!':
       case 'NOT': {
         if (val === null) return null;
-        const b = toBoolean(val);
-        if (b === null) return null;
-        return !b;
+        if (typeof val !== 'boolean') {
+          throw new FormulaError(
+            `Incorrect parameter type for operator '${node.operator}'. Expected Boolean, received ${this.describeType(val)}`,
+          );
+        }
+        return !val;
       }
       default:
         throw new FormulaError(`Unknown unary operator: ${node.operator}`);
@@ -163,8 +255,11 @@ export class Evaluator {
       return this.evalLogical(node);
     }
 
-    const left = this.evaluate(node.left);
-    const right = this.evaluate(node.right);
+    const left = this.evaluateNode(node.left);
+    const right = this.evaluateNode(node.right);
+
+    // Picklist values cannot be used in any operator
+    this.assertNotPicklist(left, right);
 
     switch (op) {
       case '+':
@@ -200,12 +295,74 @@ export class Evaluator {
     }
   }
 
+  // ── Picklist enforcement ─────────────────────────────────────────
+
+  /** Throws if either operand is a picklist value (operators don't support picklists). */
+  private assertNotPicklist(left: FormulaValue, right: FormulaValue): void {
+    if (isAnyPicklistValue(left)) {
+      const name = getPicklistFieldName(left) ?? 'unknown';
+      throw new FormulaError(`Field ${name} is a picklist field. Picklist fields are only supported in certain functions.`);
+    }
+    if (isAnyPicklistValue(right)) {
+      const name = getPicklistFieldName(right) ?? 'unknown';
+      throw new FormulaError(`Field ${name} is a picklist field. Picklist fields are only supported in certain functions.`);
+    }
+  }
+
+  /** Throws if the value is a picklist (for unary operators). */
+  private assertNotPicklistUnary(val: FormulaValue): void {
+    if (isAnyPicklistValue(val)) {
+      const name = getPicklistFieldName(val) ?? 'unknown';
+      throw new FormulaError(`Field ${name} is a picklist field. Picklist fields are only supported in certain functions.`);
+    }
+  }
+
   // ── Arithmetic ────────────────────────────────────────────────────
+
+  /** Returns the Salesforce type name for a runtime value (for error messages). */
+  private describeType(value: FormulaValue): string {
+    if (value === null || value === undefined) return 'Null';
+    if (typeof value === 'number') return 'Number';
+    if (typeof value === 'string') return 'Text';
+    if (typeof value === 'boolean') return 'Boolean';
+    if (isDate(value)) return isDateOnly(value) ? 'Date' : 'Date/Time';
+    if (isSfTime(value)) return 'Time';
+    if (isGeoLocation(value)) return 'Location';
+    return 'Unknown';
+  }
+
+  /** Salesforce rejects booleans in arithmetic operators (+, -, *, /, ^). */
+  private assertNotBoolean(left: FormulaValue, right: FormulaValue, op: string): void {
+    if (typeof left === 'boolean' || typeof right === 'boolean') {
+      const received = typeof left === 'boolean' ? 'Boolean' : 'Boolean';
+      throw new FormulaError(`Incorrect parameter type for operator '${op}'. Expected Number, Date, Date/Time, received ${received}`);
+    }
+  }
+
+  /** Salesforce rejects strings in arithmetic operators (-, *, /, ^). Not + since + does concatenation. */
+  private assertNotString(left: FormulaValue, right: FormulaValue, op: string): void {
+    if (typeof left === 'string' || typeof right === 'string') {
+      throw new FormulaError(`Incorrect parameter type for operator '${op}'. Expected Number, Date, Date/Time, received Text`);
+    }
+  }
+
+  /** Rejects non-numeric types in strict arithmetic (-, *, /, ^). */
+  private assertArithmeticTypes(left: FormulaValue, right: FormulaValue, op: string): void {
+    this.assertNotBoolean(left, right, op);
+    this.assertNotString(left, right, op);
+  }
 
   private evalAdd(left: FormulaValue, right: FormulaValue): FormulaValue {
     // String + String → concatenation (like &)
     if (typeof left === 'string' || typeof right === 'string') {
       return (toText(left) ?? '') + (toText(right) ?? '');
+    }
+
+    // Date + Date or DateTime + DateTime → error (Salesforce rejects this)
+    if (isDate(left) && isDate(right)) {
+      const lType = isDateOnly(left) ? 'Date' : 'Date/Time';
+      const rType = isDateOnly(right) ? 'Date' : 'Date/Time';
+      throw new FormulaError(`Incorrect parameter type for operator '+'. Expected Number, received ${rType}`);
     }
 
     // Date + Number or Number + Date
@@ -216,6 +373,17 @@ export class Evaluator {
       return this.addDaysToDate(right, left);
     }
 
+    // Date/DateTime + non-number → error
+    if (isDate(left) || isDate(right)) {
+      const received = this.describeType(isDate(left) ? right : left);
+      throw new FormulaError(`Incorrect parameter type for operator '+'. Expected Number, received ${received}`);
+    }
+
+    // SfTime + SfTime → error (can subtract times but not add them)
+    if (isSfTime(left) && isSfTime(right)) {
+      throw new FormulaError(`Incorrect parameter type for operator '+'. Expected Number, received Time`);
+    }
+
     // SfTime + Number
     if (isSfTime(left) && typeof right === 'number') {
       return this.addToTime(left, right);
@@ -224,7 +392,14 @@ export class Evaluator {
       return this.addToTime(right, left);
     }
 
+    // SfTime + non-number → error
+    if (isSfTime(left) || isSfTime(right)) {
+      const received = this.describeType(isSfTime(left) ? right : left);
+      throw new FormulaError(`Incorrect parameter type for operator '+'. Expected Number, received ${received}`);
+    }
+
     // Numeric addition
+    this.assertNotBoolean(left, right, '+');
     if (left === null || right === null) return null;
     const ln = toNumber(left);
     const rn = toNumber(right);
@@ -248,7 +423,23 @@ export class Evaluator {
       return { timeInMillis: (left.timeInMillis - right.timeInMillis + MS_PER_DAY) % MS_PER_DAY };
     }
 
+    // SfTime - Number → subtract from time
+    if (isSfTime(left) && typeof right === 'number') {
+      return this.addToTime(left, -right);
+    }
+
+    // Date/DateTime/SfTime with invalid partner → error
+    if (isDate(left) || isDate(right)) {
+      const received = this.describeType(isDate(left) ? right : left);
+      throw new FormulaError(`Incorrect parameter type for operator '-'. Expected Number, received ${received}`);
+    }
+    if (isSfTime(left) || isSfTime(right)) {
+      const received = this.describeType(isSfTime(left) ? right : left);
+      throw new FormulaError(`Incorrect parameter type for operator '-'. Expected Time, received ${received}`);
+    }
+
     // Numeric
+    this.assertArithmeticTypes(left, right, '-');
     if (left === null || right === null) return null;
     const ln = toNumber(left);
     const rn = toNumber(right);
@@ -257,6 +448,7 @@ export class Evaluator {
   }
 
   private evalMultiply(left: FormulaValue, right: FormulaValue): FormulaValue {
+    this.assertArithmeticTypes(left, right, '*');
     if (left === null || right === null) return null;
     const ln = toNumber(left);
     const rn = toNumber(right);
@@ -265,6 +457,7 @@ export class Evaluator {
   }
 
   private evalDivide(left: FormulaValue, right: FormulaValue): FormulaValue {
+    this.assertArithmeticTypes(left, right, '/');
     if (left === null || right === null) return null;
     const ln = toNumber(left);
     const rn = toNumber(right);
@@ -274,6 +467,7 @@ export class Evaluator {
   }
 
   private evalExponent(left: FormulaValue, right: FormulaValue): FormulaValue {
+    this.assertArithmeticTypes(left, right, '^');
     if (left === null || right === null) return null;
     const base = toNumber(left);
     const exp = toNumber(right);
@@ -414,14 +608,14 @@ export class Evaluator {
   // ── Logical ───────────────────────────────────────────────────────
 
   private evalLogical(node: BinaryExpressionNode): FormulaValue {
-    const left = this.evaluate(node.left);
+    const left = this.evaluateNode(node.left);
 
     if (node.operator === '&&') {
       // If left is null or false, return false
       const lb = toBoolean(left);
       if (lb === null || lb === false) return false;
       // Otherwise return right coerced to boolean
-      const right = this.evaluate(node.right);
+      const right = this.evaluateNode(node.right);
       const rb = toBoolean(right);
       return rb ?? false;
     }
@@ -431,7 +625,7 @@ export class Evaluator {
       const lb = toBoolean(left);
       if (lb === true) return true;
       // Otherwise return right coerced to boolean
-      const right = this.evaluate(node.right);
+      const right = this.evaluateNode(node.right);
       const rb = toBoolean(right);
       return rb ?? false;
     }

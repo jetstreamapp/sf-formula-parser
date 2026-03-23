@@ -61,7 +61,8 @@ function isoWeekDate(date: Date): { isoYear: number; isoWeek: number } {
 export function registerDateTimeFunctions(registry: FunctionRegistry): void {
   // ADDMONTHS(date, n)
   registry.register('ADDMONTHS', (ctx: FunctionContext): FormulaValue => {
-    if (ctx.args.length < 2) throw new FormulaError('ADDMONTHS requires 2 arguments');
+    if (ctx.args.length !== 2)
+      throw new FormulaError("Incorrect number of parameters for function 'ADDMONTHS()'. Expected 2, received " + ctx.args.length);
     const dateVal = ctx.evaluate(ctx.args[0]!);
     const nVal = ctx.evaluate(ctx.args[1]!);
     if (dateVal === null || nVal === null) return null;
@@ -74,7 +75,8 @@ export function registerDateTimeFunctions(registry: FunctionRegistry): void {
 
   // DATE(year, month, day)
   registry.register('DATE', (ctx: FunctionContext): FormulaValue => {
-    if (ctx.args.length < 3) throw new FormulaError('DATE requires 3 arguments');
+    if (ctx.args.length !== 3)
+      throw new FormulaError("Incorrect number of parameters for function 'DATE()'. Expected 3, received " + ctx.args.length);
     const yVal = ctx.evaluate(ctx.args[0]!);
     const mVal = ctx.evaluate(ctx.args[1]!);
     const dVal = ctx.evaluate(ctx.args[2]!);
@@ -97,7 +99,8 @@ export function registerDateTimeFunctions(registry: FunctionRegistry): void {
 
   // DATEVALUE(text|datetime)
   registry.register('DATEVALUE', (ctx: FunctionContext): FormulaValue => {
-    if (ctx.args.length < 1) throw new FormulaError('DATEVALUE requires 1 argument');
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'DATEVALUE()'. Expected 1, received " + ctx.args.length);
     const val = ctx.evaluate(ctx.args[0]!);
     if (val === null) return null;
     if (isDate(val)) {
@@ -120,7 +123,8 @@ export function registerDateTimeFunctions(registry: FunctionRegistry): void {
 
   // DATETIMEVALUE(text)
   registry.register('DATETIMEVALUE', (ctx: FunctionContext): FormulaValue => {
-    if (ctx.args.length < 1) throw new FormulaError('DATETIMEVALUE requires 1 argument');
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'DATETIMEVALUE()'. Expected 1, received " + ctx.args.length);
     const val = ctx.evaluate(ctx.args[0]!);
     if (val === null) return null;
     if (typeof val !== 'string') throw new FormulaError('DATETIMEVALUE: argument must be a string');
@@ -143,7 +147,8 @@ export function registerDateTimeFunctions(registry: FunctionRegistry): void {
 
   // DAY(date)
   registry.register('DAY', (ctx: FunctionContext): FormulaValue => {
-    if (ctx.args.length < 1) throw new FormulaError('DAY requires 1 argument');
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'DAY()'. Expected 1, received " + ctx.args.length);
     const val = ctx.evaluate(ctx.args[0]!);
     if (val === null) return null;
     if (!isDate(val)) throw new FormulaError('DAY: argument must be a date');
@@ -152,7 +157,8 @@ export function registerDateTimeFunctions(registry: FunctionRegistry): void {
 
   // HOUR(timeOrDatetime)
   registry.register('HOUR', (ctx: FunctionContext): FormulaValue => {
-    if (ctx.args.length < 1) throw new FormulaError('HOUR requires 1 argument');
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'HOUR()'. Expected 1, received " + ctx.args.length);
     const val = ctx.evaluate(ctx.args[0]!);
     if (val === null) return null;
     if (isSfTime(val)) return Math.floor(val.timeInMillis / 3600000);
@@ -162,7 +168,8 @@ export function registerDateTimeFunctions(registry: FunctionRegistry): void {
 
   // MILLISECOND(time)
   registry.register('MILLISECOND', (ctx: FunctionContext): FormulaValue => {
-    if (ctx.args.length < 1) throw new FormulaError('MILLISECOND requires 1 argument');
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'MILLISECOND()'. Expected 1, received " + ctx.args.length);
     const val = ctx.evaluate(ctx.args[0]!);
     if (val === null) return null;
     if (isSfTime(val)) return val.timeInMillis % 1000;
@@ -171,7 +178,8 @@ export function registerDateTimeFunctions(registry: FunctionRegistry): void {
 
   // MINUTE(timeOrDatetime)
   registry.register('MINUTE', (ctx: FunctionContext): FormulaValue => {
-    if (ctx.args.length < 1) throw new FormulaError('MINUTE requires 1 argument');
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'MINUTE()'. Expected 1, received " + ctx.args.length);
     const val = ctx.evaluate(ctx.args[0]!);
     if (val === null) return null;
     if (isSfTime(val)) return Math.floor((val.timeInMillis % 3600000) / 60000);
@@ -181,7 +189,8 @@ export function registerDateTimeFunctions(registry: FunctionRegistry): void {
 
   // MONTH(date)
   registry.register('MONTH', (ctx: FunctionContext): FormulaValue => {
-    if (ctx.args.length < 1) throw new FormulaError('MONTH requires 1 argument');
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'MONTH()'. Expected 1, received " + ctx.args.length);
     const val = ctx.evaluate(ctx.args[0]!);
     if (val === null) return null;
     if (!isDate(val)) throw new FormulaError('MONTH: argument must be a date');
@@ -190,12 +199,15 @@ export function registerDateTimeFunctions(registry: FunctionRegistry): void {
 
   // NOW()
   registry.register('NOW', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 0)
+      throw new FormulaError("Incorrect number of parameters for function 'NOW()'. Expected 0, received " + ctx.args.length);
     return markDateTime(ctx.options.now ? new Date(ctx.options.now.getTime()) : new Date());
   });
 
   // SECOND(timeOrDatetime)
   registry.register('SECOND', (ctx: FunctionContext): FormulaValue => {
-    if (ctx.args.length < 1) throw new FormulaError('SECOND requires 1 argument');
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'SECOND()'. Expected 1, received " + ctx.args.length);
     const val = ctx.evaluate(ctx.args[0]!);
     if (val === null) return null;
     if (isSfTime(val)) return Math.floor((val.timeInMillis % 60000) / 1000);
@@ -205,6 +217,8 @@ export function registerDateTimeFunctions(registry: FunctionRegistry): void {
 
   // TIMENOW()
   registry.register('TIMENOW', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 0)
+      throw new FormulaError("Incorrect number of parameters for function 'TIMENOW()'. Expected 0, received " + ctx.args.length);
     const now = ctx.options.now ?? new Date();
     const ms = now.getUTCHours() * 3600000 + now.getUTCMinutes() * 60000 + now.getUTCSeconds() * 1000 + now.getUTCMilliseconds();
     return { timeInMillis: ms } as SfTime;
@@ -212,7 +226,8 @@ export function registerDateTimeFunctions(registry: FunctionRegistry): void {
 
   // TIMEVALUE(text)
   registry.register('TIMEVALUE', (ctx: FunctionContext): FormulaValue => {
-    if (ctx.args.length < 1) throw new FormulaError('TIMEVALUE requires 1 argument');
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'TIMEVALUE()'. Expected 1, received " + ctx.args.length);
     const val = ctx.evaluate(ctx.args[0]!);
     if (val === null) return null;
     if (typeof val !== 'string') throw new FormulaError('TIMEVALUE: argument must be a string');
@@ -233,13 +248,16 @@ export function registerDateTimeFunctions(registry: FunctionRegistry): void {
 
   // TODAY()
   registry.register('TODAY', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 0)
+      throw new FormulaError("Incorrect number of parameters for function 'TODAY()'. Expected 0, received " + ctx.args.length);
     const now = ctx.options.now ?? new Date();
     return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
   });
 
   // WEEKDAY(date)
   registry.register('WEEKDAY', (ctx: FunctionContext): FormulaValue => {
-    if (ctx.args.length < 1) throw new FormulaError('WEEKDAY requires 1 argument');
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'WEEKDAY()'. Expected 1, received " + ctx.args.length);
     const val = ctx.evaluate(ctx.args[0]!);
     if (val === null) return null;
     if (!isDate(val)) throw new FormulaError('WEEKDAY: argument must be a date');
@@ -248,7 +266,8 @@ export function registerDateTimeFunctions(registry: FunctionRegistry): void {
 
   // YEAR(date)
   registry.register('YEAR', (ctx: FunctionContext): FormulaValue => {
-    if (ctx.args.length < 1) throw new FormulaError('YEAR requires 1 argument');
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'YEAR()'. Expected 1, received " + ctx.args.length);
     const val = ctx.evaluate(ctx.args[0]!);
     if (val === null) return null;
     if (!isDate(val)) throw new FormulaError('YEAR: argument must be a date');
@@ -257,7 +276,8 @@ export function registerDateTimeFunctions(registry: FunctionRegistry): void {
 
   // ISOWEEK(date)
   registry.register('ISOWEEK', (ctx: FunctionContext): FormulaValue => {
-    if (ctx.args.length < 1) throw new FormulaError('ISOWEEK requires 1 argument');
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'ISOWEEK()'. Expected 1, received " + ctx.args.length);
     const val = ctx.evaluate(ctx.args[0]!);
     if (val === null) return null;
     if (!isDate(val)) throw new FormulaError('ISOWEEK: argument must be a date');
@@ -266,7 +286,8 @@ export function registerDateTimeFunctions(registry: FunctionRegistry): void {
 
   // ISOYEAR(date)
   registry.register('ISOYEAR', (ctx: FunctionContext): FormulaValue => {
-    if (ctx.args.length < 1) throw new FormulaError('ISOYEAR requires 1 argument');
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'ISOYEAR()'. Expected 1, received " + ctx.args.length);
     const val = ctx.evaluate(ctx.args[0]!);
     if (val === null) return null;
     if (!isDate(val)) throw new FormulaError('ISOYEAR: argument must be a date');
@@ -275,7 +296,8 @@ export function registerDateTimeFunctions(registry: FunctionRegistry): void {
 
   // DAYOFYEAR(date)
   registry.register('DAYOFYEAR', (ctx: FunctionContext): FormulaValue => {
-    if (ctx.args.length < 1) throw new FormulaError('DAYOFYEAR requires 1 argument');
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'DAYOFYEAR()'. Expected 1, received " + ctx.args.length);
     const val = ctx.evaluate(ctx.args[0]!);
     if (val === null) return null;
     if (!isDate(val)) throw new FormulaError('DAYOFYEAR: argument must be a date');
@@ -285,7 +307,8 @@ export function registerDateTimeFunctions(registry: FunctionRegistry): void {
 
   // UNIXTIMESTAMP(datetime)
   registry.register('UNIXTIMESTAMP', (ctx: FunctionContext): FormulaValue => {
-    if (ctx.args.length < 1) throw new FormulaError('UNIXTIMESTAMP requires 1 argument');
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'UNIXTIMESTAMP()'. Expected 1, received " + ctx.args.length);
     const val = ctx.evaluate(ctx.args[0]!);
     if (val === null) return null;
     if (!isDate(val)) throw new FormulaError('UNIXTIMESTAMP: argument must be a date or datetime');
@@ -297,7 +320,8 @@ export function registerDateTimeFunctions(registry: FunctionRegistry): void {
 
   // FROMUNIXTIME(seconds) - needed for UNIXTIMESTAMP test cases
   registry.register('FROMUNIXTIME', (ctx: FunctionContext): FormulaValue => {
-    if (ctx.args.length < 1) throw new FormulaError('FROMUNIXTIME requires 1 argument');
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'FROMUNIXTIME()'. Expected 1, received " + ctx.args.length);
     const val = ctx.evaluate(ctx.args[0]!);
     if (val === null) return null;
     const n = toNumber(val);

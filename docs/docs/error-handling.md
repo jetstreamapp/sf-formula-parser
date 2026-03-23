@@ -90,6 +90,49 @@ evaluateFormula('MID("hello", -1, 3)', { record: {} });
 // FormulaError: Invalid arguments
 ```
 
+### Operator type errors
+
+```typescript
+evaluateFormula('true + true', { record: {} });
+// FormulaError: Incorrect parameter type for operator '+'. Expected Number, Date, Date/Time, received Boolean
+
+evaluateFormula('1 - "test"', { record: {} });
+// FormulaError: Incorrect parameter type for operator '-'. Expected Number, Date, Date/Time, received Text
+```
+
+### Return type mismatch
+
+```typescript
+evaluateFormula('1 + 2', { record: {} }, { returnType: 'string' });
+// FormulaError: Formula result is data type (Number), incompatible with expected data type (Text).
+```
+
+### Field not found (with schema)
+
+```typescript
+const schema = [{ name: 'Name', type: 'string' }];
+evaluateFormula('MissingField', { record: {} }, { schema });
+// FormulaError: Field MissingField does not exist. Check spelling.
+```
+
+### Picklist field restriction (with schema)
+
+```typescript
+const schema = [{ name: 'Status', type: 'picklist' }];
+evaluateFormula('UPPER(Status)', { record: { Status: 'Open' } }, { schema });
+// FormulaError: Field status is a picklist field. Picklist fields are only supported in certain functions.
+```
+
+### Argument count errors
+
+```typescript
+evaluateFormula('ABS()', { record: {} });
+// FormulaError: Incorrect number of parameters for function 'ABS()'. Expected 1, received 0
+
+evaluateFormula('IF(true)', { record: {} });
+// FormulaError: Incorrect number of parameters for function 'IF()'. Expected 2-3, received 1
+```
+
 ## Best Practices
 
 **Validate formulas before storing them.** Use `parseFormula()` to check syntax without evaluating:

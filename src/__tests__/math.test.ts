@@ -269,6 +269,18 @@ describe('Math Functions', () => {
       expect(eval_('GEOLOCATION(NULL, -122.4194)')).toBeNull();
       expect(eval_('GEOLOCATION(37.7749, NULL)')).toBeNull();
     });
+    it('throws for latitude out of range', () => {
+      expect(() => eval_('GEOLOCATION(91, 0)')).toThrow(FormulaError);
+      expect(() => eval_('GEOLOCATION(-91, 0)')).toThrow(FormulaError);
+    });
+    it('throws for longitude out of range', () => {
+      expect(() => eval_('GEOLOCATION(0, 181)')).toThrow(FormulaError);
+      expect(() => eval_('GEOLOCATION(0, -181)')).toThrow(FormulaError);
+    });
+    it('allows boundary values', () => {
+      expect(eval_('GEOLOCATION(90, 180)')).toEqual({ latitude: 90, longitude: 180 });
+      expect(eval_('GEOLOCATION(-90, -180)')).toEqual({ latitude: -90, longitude: -180 });
+    });
   });
 
   // ── DISTANCE ─────────────────────────────────────────────────────

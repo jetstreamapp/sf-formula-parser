@@ -251,15 +251,66 @@ See [Record Context](/docs/record-context) for full documentation.
 
 ```typescript
 interface EvaluationOptions {
+  returnType?: FormulaReturnType; // validate result type
+  schema?: SchemaInput; // flat FieldSchema[] or Record<string, FieldSchema[]> for related/global schemas
   treatBlanksAsZeroes?: boolean; // default: true
   now?: Date; // override current time
 }
 ```
 
-| Option                | Default      | Description                                                                                                              |
-| --------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------ |
-| `treatBlanksAsZeroes` | `true`       | When `true`, null/blank numeric fields are treated as `0` and blank text fields as `""`. Matches the Salesforce default. |
-| `now`                 | `new Date()` | Override the current timestamp. Useful for deterministic tests with `NOW()` and `TODAY()`.                               |
+| Option                | Type                | Default      | Description                                                                                                                                         |
+| --------------------- | ------------------- | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `returnType`          | `FormulaReturnType` | `undefined`  | When provided, validates the formula result matches the declared type. Throws `FormulaError` on mismatch.                                           |
+| `schema`              | `SchemaInput`       | `undefined`  | Flat `FieldSchema[]` for current object, or `Record<string, FieldSchema[]>` for related/global schemas. Compatible with `describeSObject().fields`. |
+| `treatBlanksAsZeroes` | `boolean`           | `true`       | When `true`, null/blank numeric fields are treated as `0` and blank text fields as `""`. Matches the Salesforce default.                            |
+| `now`                 | `Date`              | `new Date()` | Override the current timestamp. Useful for deterministic tests with `NOW()` and `TODAY()`.                                                          |
+
+### `FormulaReturnType`
+
+```typescript
+type FormulaReturnType = 'number' | 'string' | 'boolean' | 'date' | 'datetime' | 'time';
+```
+
+### `FieldSchema`
+
+```typescript
+interface FieldSchema {
+  name: string;
+  type: SalesforceFieldType;
+}
+```
+
+Intentionally compatible with the Salesforce `Field` type from `describeSObject()` — pass `describe.fields` directly without transformation.
+
+### `SalesforceFieldType`
+
+```typescript
+type SalesforceFieldType =
+  | 'string'
+  | 'boolean'
+  | 'int'
+  | 'double'
+  | 'date'
+  | 'datetime'
+  | 'base64'
+  | 'id'
+  | 'reference'
+  | 'currency'
+  | 'textarea'
+  | 'percent'
+  | 'phone'
+  | 'url'
+  | 'email'
+  | 'combobox'
+  | 'picklist'
+  | 'multipicklist'
+  | 'anyType'
+  | 'location'
+  | 'time'
+  | 'encryptedstring'
+  | 'address'
+  | 'complexvalue';
+```
 
 ### `ExtractedFields`
 
@@ -331,14 +382,15 @@ See [Error Handling](/docs/error-handling) for more details.
 
 The library also exports helper functions for type checking and coercion:
 
-| Function                 | Description                                                  |
-| ------------------------ | ------------------------------------------------------------ |
-| `isBlank(value)`         | Check if a value is null, undefined, or empty string         |
-| `isSfTime(value)`        | Type guard for `SfTime` values                               |
-| `isGeoLocation(value)`   | Type guard for `GeoLocation` values                          |
-| `isDate(value)`          | Type guard for `Date` values                                 |
-| `isFormulaValue(value)`  | Type guard — true for field values, false for nested records |
-| `isFormulaRecord(value)` | Type guard — true for nested records                         |
-| `toNumber(value)`        | Coerce a formula value to a number                           |
-| `toText(value)`          | Coerce a formula value to a string                           |
-| `toBoolean(value)`       | Coerce a formula value to a boolean                          |
+| Function                   | Description                                                  |
+| -------------------------- | ------------------------------------------------------------ |
+| `isBlank(value)`           | Check if a value is null, undefined, or empty string         |
+| `isSfTime(value)`          | Type guard for `SfTime` values                               |
+| `isGeoLocation(value)`     | Type guard for `GeoLocation` values                          |
+| `isDate(value)`            | Type guard for `Date` values                                 |
+| `isFormulaValue(value)`    | Type guard — true for field values, false for nested records |
+| `isFormulaRecord(value)`   | Type guard — true for nested records                         |
+| `toNumber(value)`          | Coerce a formula value to a number                           |
+| `toText(value)`            | Coerce a formula value to a string                           |
+| `toBoolean(value)`         | Coerce a formula value to a boolean                          |
+| `toFormulaType(fieldType)` | Map a `SalesforceFieldType` to an internal `FormulaType`     |

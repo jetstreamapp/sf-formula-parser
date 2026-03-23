@@ -2,7 +2,42 @@
 
 All notable changes to this project will be documented in this file.
 
-## 1.0.0
+## [Unreleased]
+
+### Added
+
+- **Return type validation** — new optional `returnType` field on `EvaluationOptions` validates the formula result matches the declared type (`number`, `string`, `boolean`, `date`, `datetime`, `time`). Throws a descriptive `FormulaError` on mismatch
+- **Schema-aware validation** — new optional `schema` field on `EvaluationOptions` accepts Salesforce `describeSObject().fields` directly for:
+  - Field existence validation (throws "Field X does not exist" instead of returning null)
+  - Picklist/multipicklist field restrictions (matches Salesforce behavior — picklist fields only allowed in TEXT, ISPICKVAL, CASE, ISBLANK, ISNULL, NULLVALUE, BLANKVALUE, INCLUDES, ISCHANGED, PRIORVALUE)
+  - **Related object and global schema** — pass `Record<string, FieldSchema[]>` to validate fields on related objects (e.g., `Account.Name`) and globals (e.g., `$User.FirstName`). Use `'$record'` key for root object, relationship names for related objects, `$`-prefixed names for globals
+- **New exported types** — `FormulaReturnType`, `FieldSchema`, `SalesforceFieldType`, `FormulaType`, `SchemaInput`, `toFormulaType()`
+- **Argument count validation** — all 70+ functions now validate argument counts with descriptive error messages matching Salesforce format
+- **GEOLOCATION range validation** — latitude must be [-90, 90], longitude must be [-180, 180]
+- **SfTime - Number subtraction** — `Time - Number` now works (was missing, only Time + Number was supported)
+
+### Fixed
+
+- **Strict operator type checking** — arithmetic operators (`+`, `-`, `*`, `/`, `^`) now reject boolean and string operands, matching Salesforce behavior
+- **Date + Date rejection** — `Date + Date` and `DateTime + DateTime` now throw, matching Salesforce
+- **Unary operator type checking** — unary `-`/`+` require Number, `!`/`NOT` require Boolean
+- **Date/Time type guards in subtraction** — invalid combinations like `String - Date` now throw instead of returning null
+
+### Changed
+
+- Argument count error messages standardized to Salesforce format: "Incorrect number of parameters for function 'NAME()'. Expected N, received M"
+- Date-time function validation uses strict equality (`!== N`) instead of minimum check (`< N`)
+
+## [1.1.0]
+
+### Added
+
+- `extractFields(formula)` — extract field references from a formula string without evaluating
+- `extractFieldsByCategory(formula)` — extract and categorize fields by `$`-prefix (objectFields, globals, customMetadata, customLabels, customSettings, customPermissions)
+- `walkAST(node, visitor)` — generic AST walker utility
+- docusaurus-plugin-llms for enhanced documentation support
+
+## [1.0.0]
 
 ### Added
 

@@ -28,6 +28,9 @@ The implementation was built by studying the [open-source Salesforce formula eng
 - **Lazy evaluation** — `IF`, `CASE`, `IFS`, and other branching functions only evaluate the branch that's taken
 - **Related record traversal** — `Account.Name`, `Contact.Account.Industry`
 - **Prior value support** — `ISCHANGED`, `PRIORVALUE`, `ISNEW`, `ISCLONE`
+- **Return type validation** — optionally declare the expected return type (`number`, `string`, `boolean`, `date`, `datetime`, `time`) and get Salesforce-accurate type mismatch errors
+- **Schema-aware validation** — pass `describeSObject().fields` directly to enable field existence checks and picklist restrictions
+- **Strict operator type checking** — arithmetic operators reject booleans and strings, matching Salesforce behavior
 - **Zero dependencies** — pure TypeScript, compiles to ESM
 - **Browser-compatible** — no Node.js APIs required
 
@@ -123,10 +126,71 @@ evaluateFormula('Account.Industry', {
 
 ```typescript
 interface EvaluationOptions {
+  returnType?: FormulaReturnType; // validate result type ('number' | 'string' | 'boolean' | 'date' | 'datetime' | 'time')
+  schema?: SchemaInput; // flat FieldSchema[] or Record<string, FieldSchema[]> for related/global schemas
   treatBlanksAsZeroes?: boolean; // default: true (matches Salesforce default)
   now?: Date; // override current time for deterministic tests
 }
 ```
+
+### Return Type Validation
+
+Declare the expected return type to catch type mismatches, just like Salesforce:
+
+```typescript
+// Passes — formula returns a number
+evaluateFormula('Amount + 1', { record: { Amount: 100 } }, { returnType: 'number' });
+
+// Throws — formula returns a Date, but number was expected
+evaluateFormula('CreatedDate + 1', { record: { CreatedDate: new Date() } }, { returnType: 'number' });
+// FormulaError: Formula result is data type (Date), incompatible with expected data type (Number).
+```
+
+### Schema Validation
+
+Pass Salesforce field metadata for field existence checks and picklist restrictions:
+
+```typescript
+import { evaluateFormula } from '@jetstreamapp/sf-formula-parser';
+
+// Fields from describeSObject() — pass directly, no transformation needed
+const schema = [
+  { name: 'Name', type: 'string' },
+  { name: 'Amount', type: 'currency' },
+  { name: 'Status', type: 'picklist' },
+];
+
+// Field existence check
+evaluateFormula('MissingField', { record: {} }, { schema });
+// FormulaError: Field MissingField does not exist. Check spelling.
+
+// Picklist restriction (matches Salesforce behavior)
+evaluateFormula('Status & " test"', { record: { Status: 'Active' } }, { schema });
+// FormulaError: Field status is a picklist field. Picklist fields are only supported in certain functions.
+
+// Use ISPICKVAL instead
+evaluateFormula('ISPICKVAL(Status, "Active")', { record: { Status: 'Active' } }, { schema });
+// true
+```
+
+#### Related Object & Global Schema
+
+Pass a `Record<string, FieldSchema[]>` to validate related object fields and globals too. Use `'$record'` for the root object, relationship names for related objects, and `$`-prefixed names for globals:
+
+```typescript
+const schema = {
+  $record: describeContact.fields, // current object (Contact)
+  Account: describeAccount.fields, // Account relationship
+  $User: describeUser.fields, // $User global
+};
+
+evaluateFormula('Account.Name', context, { schema }); // validated against Account schema
+evaluateFormula('$User.FirstName', context, { schema }); // validated against $User schema
+evaluateFormula('Account.MissingField', context, { schema });
+// FormulaError: Field MissingField does not exist. Check spelling.
+```
+
+Relationships not included in the schema map bypass validation — you only need to provide schemas for the objects you want validated.
 
 ## Supported Functions
 

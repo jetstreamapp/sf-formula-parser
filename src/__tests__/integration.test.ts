@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { ALL_TEST_SUITES } from './test-cases.js';
 import { evaluateFormula } from '../index.js';
+import { FormulaError } from '../evaluator/errors.js';
 import type { FormulaContext } from '../evaluator/context.js';
 
 /**
@@ -124,5 +125,353 @@ describe('complex formulas', () => {
 
   it('short-circuit prevents division by zero in OR', () => {
     expect(evaluateFormula('OR(true, 1/0 = 0)', { record: {} })).toBe(true);
+  });
+});
+
+// ============================================================================
+// Return type validation tests
+// ============================================================================
+
+describe('return type validation', () => {
+  const ctx: FormulaContext = { record: {} };
+
+  // ── Correct return types pass ──
+  it('number formula with returnType number passes', () => {
+    expect(evaluateFormula('1 + 2', ctx, { returnType: 'number' })).toBe(3);
+  });
+
+  it('string formula with returnType string passes', () => {
+    expect(evaluateFormula('"hello"', ctx, { returnType: 'string' })).toBe('hello');
+  });
+
+  it('boolean formula with returnType boolean passes', () => {
+    expect(evaluateFormula('true', ctx, { returnType: 'boolean' })).toBe(true);
+  });
+
+  it('date formula with returnType date passes', () => {
+    const result = evaluateFormula('DATE(2024, 1, 15)', ctx, { returnType: 'date' });
+    expect(result).toBeInstanceOf(Date);
+  });
+
+  it('datetime formula with returnType datetime passes', () => {
+    const result = evaluateFormula('DATETIMEVALUE("2024-01-15 12:00:00")', ctx, { returnType: 'datetime' });
+    expect(result).toBeInstanceOf(Date);
+  });
+
+  it('time formula with returnType time passes', () => {
+    const result = evaluateFormula('TIMEVALUE("12:34:56.789")', ctx, { returnType: 'time' });
+    expect(result).not.toBeNull();
+    expect(typeof result === 'object' && result !== null && 'timeInMillis' in result).toBe(true);
+  });
+
+  it('null result passes any return type', () => {
+    expect(evaluateFormula('null', ctx, { returnType: 'number' })).toBeNull();
+    expect(evaluateFormula('null', ctx, { returnType: 'string' })).toBeNull();
+    expect(evaluateFormula('null', ctx, { returnType: 'boolean' })).toBeNull();
+    expect(evaluateFormula('null', ctx, { returnType: 'date' })).toBeNull();
+    expect(evaluateFormula('null', ctx, { returnType: 'datetime' })).toBeNull();
+    expect(evaluateFormula('null', ctx, { returnType: 'time' })).toBeNull();
+  });
+
+  // ── Mismatched return types throw ──
+  it('number result with returnType string throws', () => {
+    expect(() => evaluateFormula('1 + 2', ctx, { returnType: 'string' })).toThrow(FormulaError);
+    expect(() => evaluateFormula('1 + 2', ctx, { returnType: 'string' })).toThrow(
+      /Formula result is data type \(Number\), incompatible with expected data type \(Text\)/,
+    );
+  });
+
+  it('string result with returnType number throws', () => {
+    expect(() => evaluateFormula('"hello"', ctx, { returnType: 'number' })).toThrow(FormulaError);
+  });
+
+  it('boolean result with returnType number throws', () => {
+    expect(() => evaluateFormula('true', ctx, { returnType: 'number' })).toThrow(FormulaError);
+  });
+
+  it('date result with returnType number throws', () => {
+    expect(() => evaluateFormula('DATE(2024, 1, 15)', ctx, { returnType: 'number' })).toThrow(FormulaError);
+  });
+
+  it('datetime result with returnType date throws', () => {
+    expect(() => evaluateFormula('DATETIMEVALUE("2024-01-15 12:00:00")', ctx, { returnType: 'date' })).toThrow(FormulaError);
+  });
+
+  it('date result with returnType datetime throws', () => {
+    expect(() => evaluateFormula('DATE(2024, 1, 15)', ctx, { returnType: 'datetime' })).toThrow(FormulaError);
+  });
+
+  it('number result with returnType boolean throws', () => {
+    expect(() => evaluateFormula('42', ctx, { returnType: 'boolean' })).toThrow(FormulaError);
+  });
+
+  // ── Without returnType, no validation ──
+  it('no returnType option skips validation', () => {
+    expect(evaluateFormula('1 + 2', ctx)).toBe(3);
+    expect(evaluateFormula('"hello"', ctx)).toBe('hello');
+  });
+
+  // ── Date + Number with correct return type ──
+  it('Date + Number passes with returnType date', () => {
+    const baseDate = new Date('2024-01-01T00:00:00.000Z');
+    const result = evaluateFormula('MyDate + 5', { record: { MyDate: baseDate } }, { returnType: 'date' });
+    expect(result).toBeInstanceOf(Date);
+  });
+
+  it('Date + Number throws with returnType number', () => {
+    const baseDate = new Date('2024-01-01T00:00:00.000Z');
+    expect(() => evaluateFormula('MyDate + 5', { record: { MyDate: baseDate } }, { returnType: 'number' })).toThrow(
+      /incompatible with expected data type/,
+    );
+  });
+});
+
+// ============================================================================
+// Schema validation tests
+// ============================================================================
+
+import type { FieldSchema } from '../evaluator/schema.js';
+
+describe('schema validation', () => {
+  const schema: FieldSchema[] = [
+    { name: 'Name', type: 'string' },
+    { name: 'Amount', type: 'currency' },
+    { name: 'IsActive', type: 'boolean' },
+    { name: 'CreatedDate', type: 'datetime' },
+    { name: 'Status', type: 'picklist' },
+    { name: 'Interests', type: 'multipicklist' },
+  ];
+
+  const ctx = {
+    record: {
+      Name: 'Acme',
+      Amount: 1000,
+      IsActive: true,
+      CreatedDate: new Date('2024-01-15T12:00:00.000Z'),
+      Status: 'Active',
+      Interests: 'Golf;Tennis',
+    },
+  };
+
+  // ── Field existence ──
+  it('existing field resolves normally with schema', () => {
+    expect(evaluateFormula('Name', ctx, { schema })).toBe('Acme');
+  });
+
+  it('missing field throws with schema', () => {
+    expect(() => evaluateFormula('MissingField', ctx, { schema })).toThrow(FormulaError);
+    expect(() => evaluateFormula('MissingField', ctx, { schema })).toThrow(/does not exist/);
+  });
+
+  it('missing field returns null without schema', () => {
+    expect(evaluateFormula('MissingField', ctx)).toBeNull();
+  });
+
+  it('field lookup is case-insensitive with schema', () => {
+    expect(evaluateFormula('name', ctx, { schema })).toBe('Acme');
+    expect(evaluateFormula('amount', ctx, { schema })).toBe(1000);
+  });
+
+  // ── Picklist restrictions in operators ──
+  it('picklist in & operator throws', () => {
+    expect(() => evaluateFormula('Status & " test"', ctx, { schema })).toThrow(/picklist field/);
+  });
+
+  it('picklist in = operator throws', () => {
+    expect(() => evaluateFormula('Status = "Active"', ctx, { schema })).toThrow(/picklist field/);
+  });
+
+  it('multipicklist in + operator throws', () => {
+    expect(() => evaluateFormula('Interests & " more"', ctx, { schema })).toThrow(/picklist field/);
+  });
+
+  // ── Picklist restrictions in non-allowed functions ──
+  it('picklist in UPPER() throws', () => {
+    expect(() => evaluateFormula('UPPER(Status)', ctx, { schema })).toThrow(/picklist field/);
+  });
+
+  it('picklist in CONTAINS() throws', () => {
+    expect(() => evaluateFormula('CONTAINS(Status, "Act")', ctx, { schema })).toThrow(/picklist field/);
+  });
+
+  it('picklist in LEN() throws', () => {
+    expect(() => evaluateFormula('LEN(Status)', ctx, { schema })).toThrow(/picklist field/);
+  });
+
+  // ── Picklist allowed in specific functions ──
+  it('picklist in TEXT() works', () => {
+    expect(evaluateFormula('TEXT(Status)', ctx, { schema })).toBe('Active');
+  });
+
+  it('picklist in ISPICKVAL() works', () => {
+    expect(evaluateFormula('ISPICKVAL(Status, "Active")', ctx, { schema })).toBe(true);
+    expect(evaluateFormula('ISPICKVAL(Status, "Closed")', ctx, { schema })).toBe(false);
+  });
+
+  it('picklist in ISBLANK() works', () => {
+    expect(evaluateFormula('ISBLANK(Status)', ctx, { schema })).toBe(false);
+  });
+
+  it('picklist in CASE() works', () => {
+    expect(evaluateFormula('CASE(Status, "Active", 1, "Closed", 2, 0)', ctx, { schema })).toBe(1);
+  });
+
+  it('picklist in NULLVALUE() works', () => {
+    expect(evaluateFormula('NULLVALUE(Status, "None")', ctx, { schema })).not.toBeNull();
+  });
+
+  it('picklist in BLANKVALUE() works', () => {
+    expect(evaluateFormula('BLANKVALUE(Status, "None")', ctx, { schema })).toBe('Active');
+  });
+
+  // ── Multipicklist allowed in INCLUDES ──
+  it('multipicklist in INCLUDES() works', () => {
+    expect(evaluateFormula('INCLUDES(Interests, "Golf")', ctx, { schema })).toBe(true);
+    expect(evaluateFormula('INCLUDES(Interests, "Swimming")', ctx, { schema })).toBe(false);
+  });
+
+  // ── No schema = no picklist enforcement ──
+  it('picklist field used in operator without schema does not throw', () => {
+    expect(evaluateFormula('Status & " test"', ctx)).toBe('Active test');
+  });
+
+  it('picklist field used in UPPER without schema does not throw', () => {
+    expect(evaluateFormula('UPPER(Status)', ctx)).toBe('ACTIVE');
+  });
+
+  // ── Non-picklist fields work normally with schema ──
+  it('string field in operators works with schema', () => {
+    expect(evaluateFormula('UPPER(Name)', ctx, { schema })).toBe('ACME');
+  });
+
+  it('number field in arithmetic works with schema', () => {
+    expect(evaluateFormula('Amount + 1', ctx, { schema })).toBe(1001);
+  });
+
+  it('boolean field works with schema', () => {
+    expect(evaluateFormula('IF(IsActive, "yes", "no")', ctx, { schema })).toBe('yes');
+  });
+
+  // ── Related field schema validation (flat array only covers root) ──
+  it('related field without relationship schema bypasses validation', () => {
+    const ctxWithRelated = {
+      record: {
+        Name: 'Acme',
+        Account: { Name: 'Parent Corp', Industry: 'Tech' },
+      },
+    };
+    // schema (flat array) only covers root object — Account.Name is not validated
+    expect(evaluateFormula('Account.Name', ctxWithRelated, { schema })).toBe('Parent Corp');
+  });
+
+  it('global field without global schema bypasses validation', () => {
+    const ctxWithGlobals = {
+      record: {},
+      globals: { $User: { FirstName: 'Jane' } },
+    };
+    expect(evaluateFormula('$User.FirstName', ctxWithGlobals, { schema })).toBe('Jane');
+  });
+});
+
+// ============================================================================
+// Schema validation with relationship map
+// ============================================================================
+
+describe('schema validation with relationships', () => {
+  const fullSchema: Record<string, FieldSchema[]> = {
+    $record: [
+      { name: 'Name', type: 'string' },
+      { name: 'Amount', type: 'currency' },
+      { name: 'Status', type: 'picklist' },
+    ],
+    Account: [
+      { name: 'Name', type: 'string' },
+      { name: 'Industry', type: 'picklist' },
+    ],
+    $User: [
+      { name: 'FirstName', type: 'string' },
+      { name: 'LastName', type: 'string' },
+      { name: 'IsActive', type: 'boolean' },
+    ],
+  };
+
+  const ctx = {
+    record: {
+      Name: 'Acme',
+      Amount: 1000,
+      Status: 'Active',
+      Account: { Name: 'Parent Corp', Industry: 'Technology' },
+    },
+    globals: {
+      $User: { FirstName: 'Jane', LastName: 'Smith', IsActive: true },
+    },
+  };
+
+  // ── Root object fields validated ──
+  it('root field resolves with relationship schema', () => {
+    expect(evaluateFormula('Name', ctx, { schema: fullSchema })).toBe('Acme');
+  });
+
+  it('root missing field throws with relationship schema', () => {
+    expect(() => evaluateFormula('MissingField', ctx, { schema: fullSchema })).toThrow(/does not exist/);
+  });
+
+  // ── Related object fields validated ──
+  it('related field resolves with relationship schema', () => {
+    expect(evaluateFormula('Account.Name', ctx, { schema: fullSchema })).toBe('Parent Corp');
+  });
+
+  it('related missing field throws with relationship schema', () => {
+    expect(() => evaluateFormula('Account.Website', ctx, { schema: fullSchema })).toThrow(/does not exist/);
+  });
+
+  it('related picklist field enforced with relationship schema', () => {
+    // Account.Industry is a picklist — can't use in UPPER
+    expect(() => evaluateFormula('UPPER(Account.Industry)', ctx, { schema: fullSchema })).toThrow(/picklist field/);
+  });
+
+  it('related picklist field works in TEXT()', () => {
+    expect(evaluateFormula('TEXT(Account.Industry)', ctx, { schema: fullSchema })).toBe('Technology');
+  });
+
+  it('related picklist field works in ISPICKVAL()', () => {
+    expect(evaluateFormula('ISPICKVAL(Account.Industry, "Technology")', ctx, { schema: fullSchema })).toBe(true);
+  });
+
+  // ── Global fields validated ──
+  it('global field resolves with relationship schema', () => {
+    expect(evaluateFormula('$User.FirstName', ctx, { schema: fullSchema })).toBe('Jane');
+  });
+
+  it('global missing field throws with relationship schema', () => {
+    expect(() => evaluateFormula('$User.Email', ctx, { schema: fullSchema })).toThrow(/does not exist/);
+  });
+
+  // ── Relationship without schema defined bypasses validation ──
+  it('relationship not in schema map bypasses validation', () => {
+    const ctxWithOwner = {
+      ...ctx,
+      record: { ...ctx.record, Owner: { Name: 'Bob' } },
+    };
+    // Owner is not in fullSchema — should resolve without error
+    expect(evaluateFormula('Owner.Name', ctxWithOwner, { schema: fullSchema })).toBe('Bob');
+  });
+
+  // ── Root picklist still enforced ──
+  it('root picklist enforced with relationship schema', () => {
+    expect(() => evaluateFormula('Status & " test"', ctx, { schema: fullSchema })).toThrow(/picklist field/);
+  });
+
+  it('root picklist in ISPICKVAL works with relationship schema', () => {
+    expect(evaluateFormula('ISPICKVAL(Status, "Active")', ctx, { schema: fullSchema })).toBe(true);
+  });
+
+  // ── Schema is case-insensitive ──
+  it('relationship keys are case-insensitive', () => {
+    const schemaWithCase: Record<string, FieldSchema[]> = {
+      $record: [{ name: 'Name', type: 'string' }],
+      account: [{ name: 'Name', type: 'string' }],
+    };
+    expect(evaluateFormula('Account.Name', ctx, { schema: schemaWithCase })).toBe('Parent Corp');
   });
 });

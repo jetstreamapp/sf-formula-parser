@@ -68,6 +68,8 @@ function jsEncode(text: string): string {
 export function registerTextFunctions(registry: FunctionRegistry): void {
   // 1. BEGINS(text, search)
   registry.register('BEGINS', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 2)
+      throw new FormulaError("Incorrect number of parameters for function 'BEGINS()'. Expected 2, received " + ctx.args.length);
     const search = toText(ctx.evaluate(ctx.args[1]!));
     if (search === null || search === '') return true;
     const text = toText(ctx.evaluate(ctx.args[0]!));
@@ -77,11 +79,15 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 2. BR()
   registry.register('BR', (_ctx: FunctionContext): FormulaValue => {
+    if (_ctx.args.length !== 0)
+      throw new FormulaError("Incorrect number of parameters for function 'BR()'. Expected 0, received " + _ctx.args.length);
     return '<br>';
   });
 
   // 3. CASESAFEID(id)
   registry.register('CASESAFEID', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'CASESAFEID()'. Expected 1, received " + ctx.args.length);
     const id = toText(ctx.evaluate(ctx.args[0]!));
     if (id === null) return null;
     return caseSafeId(id);
@@ -89,6 +95,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 4. CONTAINS(text, search)
   registry.register('CONTAINS', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 2)
+      throw new FormulaError("Incorrect number of parameters for function 'CONTAINS()'. Expected 2, received " + ctx.args.length);
     const search = toText(ctx.evaluate(ctx.args[1]!));
     if (search === null || search === '') return true;
     const text = toText(ctx.evaluate(ctx.args[0]!));
@@ -98,6 +106,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 5. FIND(search, text, [start])
   registry.register('FIND', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length < 2 || ctx.args.length > 3)
+      throw new FormulaError("Incorrect number of parameters for function 'FIND()'. Expected 2-3, received " + ctx.args.length);
     const searchVal = ctx.evaluate(ctx.args[0]!);
     const textVal = ctx.evaluate(ctx.args[1]!);
     if (searchVal === null) return 0;
@@ -112,11 +122,15 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 6. GETSESSIONID()
   registry.register('GETSESSIONID', (_ctx: FunctionContext): FormulaValue => {
+    if (_ctx.args.length !== 0)
+      throw new FormulaError("Incorrect number of parameters for function 'GETSESSIONID()'. Expected 0, received " + _ctx.args.length);
     return '';
   });
 
   // 7. HTMLENCODE(text)
   registry.register('HTMLENCODE', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'HTMLENCODE()'. Expected 1, received " + ctx.args.length);
     const text = toText(ctx.evaluate(ctx.args[0]!));
     if (text === null) return null;
     return htmlEncode(text);
@@ -124,6 +138,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 8. HYPERLINK(url, label, [target])
   registry.register('HYPERLINK', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length < 2 || ctx.args.length > 3)
+      throw new FormulaError("Incorrect number of parameters for function 'HYPERLINK()'. Expected 2-3, received " + ctx.args.length);
     const url = toText(ctx.evaluate(ctx.args[0]!));
     if (url === null) return null;
     const label = toText(ctx.evaluate(ctx.args[1]!)) ?? '';
@@ -133,6 +149,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 9. IMAGE(url, alt, [height, width])
   registry.register('IMAGE', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length < 2 || ctx.args.length > 4)
+      throw new FormulaError("Incorrect number of parameters for function 'IMAGE()'. Expected 2-4, received " + ctx.args.length);
     const url = toText(ctx.evaluate(ctx.args[0]!));
     if (url === null) return null;
     const alt = toText(ctx.evaluate(ctx.args[1]!)) ?? '';
@@ -150,6 +168,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 10. INCLUDES(multiSelectField, value)
   registry.register('INCLUDES', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 2)
+      throw new FormulaError("Incorrect number of parameters for function 'INCLUDES()'. Expected 2, received " + ctx.args.length);
     const field = toText(ctx.evaluate(ctx.args[0]!));
     const value = toText(ctx.evaluate(ctx.args[1]!)) ?? '';
     if (field === null) return false;
@@ -159,6 +179,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 11. ISPICKVAL(picklistField, value)
   registry.register('ISPICKVAL', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 2)
+      throw new FormulaError("Incorrect number of parameters for function 'ISPICKVAL()'. Expected 2, received " + ctx.args.length);
     const picklist = toText(ctx.evaluate(ctx.args[0]!)) ?? '';
     const value = toText(ctx.evaluate(ctx.args[1]!)) ?? '';
     return picklist === value;
@@ -166,6 +188,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 12. JSENCODE(text)
   registry.register('JSENCODE', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'JSENCODE()'. Expected 1, received " + ctx.args.length);
     const text = toText(ctx.evaluate(ctx.args[0]!));
     if (text === null) return null;
     return jsEncode(text);
@@ -173,6 +197,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 13. JSINHTMLENCODE(text)
   registry.register('JSINHTMLENCODE', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'JSINHTMLENCODE()'. Expected 1, received " + ctx.args.length);
     const text = toText(ctx.evaluate(ctx.args[0]!));
     if (text === null) return null;
     return htmlEncode(jsEncode(text));
@@ -180,6 +206,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 14. LEFT(text, n)
   registry.register('LEFT', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 2)
+      throw new FormulaError("Incorrect number of parameters for function 'LEFT()'. Expected 2, received " + ctx.args.length);
     const n = toNumber(ctx.evaluate(ctx.args[1]!));
     if (n === null || n <= 0) return null;
     const text = toText(ctx.evaluate(ctx.args[0]!));
@@ -189,6 +217,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 15. LEN(text)
   registry.register('LEN', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'LEN()'. Expected 1, received " + ctx.args.length);
     const text = toText(ctx.evaluate(ctx.args[0]!));
     if (text === null) return 0;
     return text.length;
@@ -196,6 +226,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 16. LOWER(text)
   registry.register('LOWER', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'LOWER()'. Expected 1, received " + ctx.args.length);
     const text = toText(ctx.evaluate(ctx.args[0]!));
     if (text === null) return null;
     return text.toLowerCase();
@@ -203,6 +235,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 17. LPAD(text, length, [padStr])
   registry.register('LPAD', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length < 2 || ctx.args.length > 3)
+      throw new FormulaError("Incorrect number of parameters for function 'LPAD()'. Expected 2-3, received " + ctx.args.length);
     const text = toText(ctx.evaluate(ctx.args[0]!));
     if (text === null) return null;
     const length = toNumber(ctx.evaluate(ctx.args[1]!));
@@ -219,6 +253,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 18. MID(text, start, length)
   registry.register('MID', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 3)
+      throw new FormulaError("Incorrect number of parameters for function 'MID()'. Expected 3, received " + ctx.args.length);
     const text = toText(ctx.evaluate(ctx.args[0]!));
     if (text === null || text === '') return null;
     const startRaw = toNumber(ctx.evaluate(ctx.args[1]!));
@@ -235,6 +271,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 19. RIGHT(text, n)
   registry.register('RIGHT', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 2)
+      throw new FormulaError("Incorrect number of parameters for function 'RIGHT()'. Expected 2, received " + ctx.args.length);
     const n = toNumber(ctx.evaluate(ctx.args[1]!));
     if (n === null || n <= 0) return null;
     const text = toText(ctx.evaluate(ctx.args[0]!));
@@ -245,6 +283,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 20. RPAD(text, length, [padStr])
   registry.register('RPAD', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length < 2 || ctx.args.length > 3)
+      throw new FormulaError("Incorrect number of parameters for function 'RPAD()'. Expected 2-3, received " + ctx.args.length);
     const text = toText(ctx.evaluate(ctx.args[0]!));
     if (text === null) return null;
     const length = toNumber(ctx.evaluate(ctx.args[1]!));
@@ -261,6 +301,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 21. SUBSTITUTE(text, old, new)
   registry.register('SUBSTITUTE', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 3)
+      throw new FormulaError("Incorrect number of parameters for function 'SUBSTITUTE()'. Expected 3, received " + ctx.args.length);
     const text = toText(ctx.evaluate(ctx.args[0]!));
     if (text === null || text === '') return null;
     const oldStr = toText(ctx.evaluate(ctx.args[1]!));
@@ -272,6 +314,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 22. TEXT(value)
   registry.register('TEXT', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'TEXT()'. Expected 1, received " + ctx.args.length);
     const value = ctx.evaluate(ctx.args[0]!);
     if (value === null) return null;
     if (typeof value === 'number') return formatNumber(value);
@@ -284,6 +328,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 23. TRIM(text)
   registry.register('TRIM', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'TRIM()'. Expected 1, received " + ctx.args.length);
     const text = toText(ctx.evaluate(ctx.args[0]!));
     if (text === null) return null;
     const trimmed = text.trim();
@@ -292,6 +338,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 24. UPPER(text)
   registry.register('UPPER', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'UPPER()'. Expected 1, received " + ctx.args.length);
     const text = toText(ctx.evaluate(ctx.args[0]!));
     if (text === null) return null;
     return text.toUpperCase();
@@ -299,6 +347,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 25. URLENCODE(text)
   registry.register('URLENCODE', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'URLENCODE()'. Expected 1, received " + ctx.args.length);
     const text = toText(ctx.evaluate(ctx.args[0]!));
     if (text === null) return null;
     return encodeURIComponent(text);
@@ -306,6 +356,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 26. VALUE(text)
   registry.register('VALUE', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'VALUE()'. Expected 1, received " + ctx.args.length);
     const text = toText(ctx.evaluate(ctx.args[0]!));
     if (text === null) return null;
     const n = Number(text);
@@ -315,6 +367,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 27. CHR(code)
   registry.register('CHR', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'CHR()'. Expected 1, received " + ctx.args.length);
     const n = toNumber(ctx.evaluate(ctx.args[0]!));
     if (n === null) return null;
     const code = Math.trunc(n);
@@ -324,6 +378,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 28. ASCII(text)
   registry.register('ASCII', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'ASCII()'. Expected 1, received " + ctx.args.length);
     const text = toText(ctx.evaluate(ctx.args[0]!));
     if (text === null || text === '') return null;
     return text.charCodeAt(0);
@@ -331,6 +387,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 29. INITCAP(text)
   registry.register('INITCAP', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'INITCAP()'. Expected 1, received " + ctx.args.length);
     const text = toText(ctx.evaluate(ctx.args[0]!));
     if (text === null) return null;
     // Capitalize first letter after whitespace or underscore
@@ -361,6 +419,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
 
   // 30. REGEX(text, pattern)
   registry.register('REGEX', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 2)
+      throw new FormulaError("Incorrect number of parameters for function 'REGEX()'. Expected 2, received " + ctx.args.length);
     const textVal = ctx.evaluate(ctx.args[0]!);
     const patternVal = ctx.evaluate(ctx.args[1]!);
     const t = toText(textVal) ?? '';

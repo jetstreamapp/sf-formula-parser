@@ -124,6 +124,8 @@ Pass options as the third argument to `evaluateFormula`:
 
 ```typescript
 evaluateFormula(formula, context, {
+  returnType: 'string',
+  schema: describe.fields,
   treatBlanksAsZeroes: true, // default
   now: new Date('2024-06-15T12:00:00Z'),
 });
@@ -151,6 +153,59 @@ evaluateFormula('TEXT(TODAY())', context, {
 // Returns a consistent result regardless of when the test runs
 ```
 
+### Schema Validation
+
+Pass Salesforce field metadata to enable type-aware validation. The `schema` option accepts an array of `FieldSchema` objects — compatible with `describeSObject().fields`:
+
+```typescript
+const describe = await conn.describeSObject('Account');
+
+evaluateFormula('UPPER(Name)', context, {
+  schema: describe.fields, // pass directly — no transformation needed
+});
+```
+
+When schema is provided:
+
+- **Field existence** — referencing a direct field not in the schema throws `FormulaError`
+- **Picklist restrictions** — picklist fields can only be used in `TEXT()`, `ISPICKVAL()`, `CASE()`, `ISBLANK()`, `ISNULL()`, `NULLVALUE()`, `BLANKVALUE()`, `INCLUDES()`, `ISCHANGED()`, `PRIORVALUE()`
+- **All other behavior** is unchanged — schema is purely additive
+
+#### Simple schema (current object only)
+
+A flat `FieldSchema[]` validates only direct fields on the current object:
+
+```typescript
+const schema = [
+  { name: 'Name', type: 'string' },
+  { name: 'Status', type: 'picklist' },
+];
+
+evaluateFormula('Name', context, { schema }); // OK
+evaluateFormula('MissingField', context, { schema }); // throws
+evaluateFormula('Account.Name', context, { schema }); // OK (no schema for Account, bypassed)
+```
+
+#### Full schema (with related objects and globals)
+
+Pass a `Record<string, FieldSchema[]>` to validate related object fields and globals too. Use `'$record'` for the root object, relationship names as keys, and `$`-prefixed names for globals:
+
+```typescript
+const schema = {
+  $record: describeContact.fields, // current object
+  Account: describeAccount.fields, // Account relationship
+  $User: describeUser.fields, // $User global
+};
+
+evaluateFormula('Name', context, { schema }); // validated against root schema
+evaluateFormula('Account.Name', context, { schema }); // validated against Account schema
+evaluateFormula('$User.FirstName', context, { schema }); // validated against $User schema
+evaluateFormula('Owner.Name', context, { schema }); // bypassed (Owner not in schema)
+evaluateFormula('Account.Website', context, { schema }); // throws (not in Account schema)
+```
+
+Relationships not included in the schema map bypass validation — you only need to provide schemas for the objects you want validated.
+
 ## Full Interface
 
 ```typescript
@@ -165,7 +220,12 @@ interface FormulaContext {
   isClone?: boolean;
 }
 
+// Schema can be a flat array (current object) or a map (multiple objects)
+type SchemaInput = FieldSchema[] | Record<string, FieldSchema[]>;
+
 interface EvaluationOptions {
+  returnType?: FormulaReturnType;
+  schema?: SchemaInput;
   treatBlanksAsZeroes?: boolean;
   now?: Date;
 }
