@@ -85,6 +85,8 @@ function lookupPriorValue(record: FormulaRecord, parts: string[]): FormulaValue 
 
 function ifFn(ctx: FunctionContext): FormulaValue {
   const { args } = ctx;
+  if (args.length < 2 || args.length > 3)
+    throw new FormulaError("Incorrect number of parameters for function 'IF()'. Expected 2-3, received " + args.length);
   const cond = ctx.evaluate(args[0]!);
   const b = toBoolean(cond);
   if (b === true) return ctx.evaluate(args[1]!);
@@ -105,6 +107,8 @@ function ifsFn(ctx: FunctionContext): FormulaValue {
 
 function caseFn(ctx: FunctionContext): FormulaValue {
   const { args } = ctx;
+  if (args.length < 4 || args.length % 2 !== 0)
+    throw new FormulaError("Incorrect number of parameters for function 'CASE()'. Expected 4+, received " + args.length);
   const expr = ctx.evaluate(args[0]!);
   // If expr is null, no match is possible — go straight to else
   if (expr === null) {
@@ -121,6 +125,7 @@ function caseFn(ctx: FunctionContext): FormulaValue {
 
 function andFn(ctx: FunctionContext): FormulaValue {
   const { args } = ctx;
+  if (args.length < 1) throw new FormulaError("Incorrect number of parameters for function 'AND()'. Expected 1+, received " + args.length);
   for (const arg of args) {
     const val = ctx.evaluate(arg);
     const b = toBoolean(val);
@@ -131,6 +136,7 @@ function andFn(ctx: FunctionContext): FormulaValue {
 
 function orFn(ctx: FunctionContext): FormulaValue {
   const { args } = ctx;
+  if (args.length < 1) throw new FormulaError("Incorrect number of parameters for function 'OR()'. Expected 1+, received " + args.length);
   for (const arg of args) {
     const val = ctx.evaluate(arg);
     const b = toBoolean(val);
@@ -141,6 +147,7 @@ function orFn(ctx: FunctionContext): FormulaValue {
 
 function notFn(ctx: FunctionContext): FormulaValue {
   const { args } = ctx;
+  if (args.length !== 1) throw new FormulaError("Incorrect number of parameters for function 'NOT()'. Expected 1, received " + args.length);
   const val = ctx.evaluate(args[0]!);
   if (val === null) return null;
   const b = toBoolean(val);
@@ -149,11 +156,15 @@ function notFn(ctx: FunctionContext): FormulaValue {
 }
 
 function isBlankFn(ctx: FunctionContext): FormulaValue {
+  if (ctx.args.length !== 1)
+    throw new FormulaError("Incorrect number of parameters for function 'ISBLANK()'. Expected 1, received " + ctx.args.length);
   const val = ctx.evaluate(ctx.args[0]!);
   return isBlank(val);
 }
 
 function isNumberFn(ctx: FunctionContext): FormulaValue {
+  if (ctx.args.length !== 1)
+    throw new FormulaError("Incorrect number of parameters for function 'ISNUMBER()'. Expected 1, received " + ctx.args.length);
   const val = ctx.evaluate(ctx.args[0]!);
   if (val === null) return false;
   if (typeof val === 'number') return true;
@@ -163,6 +174,8 @@ function isNumberFn(ctx: FunctionContext): FormulaValue {
 
 function blankValueFn(ctx: FunctionContext): FormulaValue {
   const { args } = ctx;
+  if (args.length !== 2)
+    throw new FormulaError("Incorrect number of parameters for function 'BLANKVALUE()'. Expected 2, received " + args.length);
   const val = ctx.evaluate(args[0]!);
   if (!isBlank(val)) return val;
   return ctx.evaluate(args[1]!);
@@ -170,6 +183,8 @@ function blankValueFn(ctx: FunctionContext): FormulaValue {
 
 function nullValueFn(ctx: FunctionContext): FormulaValue {
   const { args } = ctx;
+  if (args.length !== 2)
+    throw new FormulaError("Incorrect number of parameters for function 'NULLVALUE()'. Expected 2, received " + args.length);
   const val = ctx.evaluate(args[0]!);
   const substitute = ctx.evaluate(args[1]!);
   // Salesforce quirk: in string context, NULLVALUE is optimized away.
@@ -184,6 +199,8 @@ function nullValueFn(ctx: FunctionContext): FormulaValue {
 
 function ifErrorFn(ctx: FunctionContext): FormulaValue {
   const { args } = ctx;
+  if (args.length !== 2)
+    throw new FormulaError("Incorrect number of parameters for function 'IFERROR()'. Expected 2, received " + args.length);
   try {
     return ctx.evaluate(args[0]!);
   } catch (e) {
@@ -194,6 +211,8 @@ function ifErrorFn(ctx: FunctionContext): FormulaValue {
 
 function isChangedFn(ctx: FunctionContext): FormulaValue {
   const { args } = ctx;
+  if (args.length !== 1)
+    throw new FormulaError("Incorrect number of parameters for function 'ISCHANGED()'. Expected 1, received " + args.length);
   const node = args[0]!;
   if (node.type !== 'FieldReference') {
     throw new FormulaError('ISCHANGED requires a field reference');
@@ -204,15 +223,21 @@ function isChangedFn(ctx: FunctionContext): FormulaValue {
 }
 
 function isNewFn(ctx: FunctionContext): FormulaValue {
+  if (ctx.args.length !== 0)
+    throw new FormulaError("Incorrect number of parameters for function 'ISNEW()'. Expected 0, received " + ctx.args.length);
   return ctx.context.isNew ?? false;
 }
 
 function isCloneFn(ctx: FunctionContext): FormulaValue {
+  if (ctx.args.length !== 0)
+    throw new FormulaError("Incorrect number of parameters for function 'ISCLONE()'. Expected 0, received " + ctx.args.length);
   return ctx.context.isClone ?? false;
 }
 
 function priorValueFn(ctx: FunctionContext): FormulaValue {
   const { args } = ctx;
+  if (args.length !== 1)
+    throw new FormulaError("Incorrect number of parameters for function 'PRIORVALUE()'. Expected 1, received " + args.length);
   const node = args[0]!;
   if (node.type !== 'FieldReference') {
     throw new FormulaError('PRIORVALUE requires a field reference');
@@ -232,6 +257,8 @@ export function registerLogicalFunctions(registry: FunctionRegistry): void {
   registry.register('NOT', notFn);
   registry.register('ISBLANK', isBlankFn);
   registry.register('ISNULL', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'ISNULL()'. Expected 1, received " + ctx.args.length);
     const val = ctx.evaluate(ctx.args[0]!);
     return val === null || val === undefined;
   });

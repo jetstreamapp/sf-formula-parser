@@ -95,7 +95,15 @@ evaluateFormula('Account.Industry', context);
 The library is written in TypeScript and exports all its types:
 
 ```typescript
-import type { FormulaValue, FormulaContext, FormulaRecord, EvaluationOptions, ASTNode } from '@jetstreamapp/sf-formula-parser';
+import type {
+  FormulaValue,
+  FormulaContext,
+  FormulaRecord,
+  FormulaReturnType,
+  FieldSchema,
+  EvaluationOptions,
+  ASTNode,
+} from '@jetstreamapp/sf-formula-parser';
 ```
 
 `FormulaValue` can be `number`, `string`, `boolean`, `Date`, `SfTime`, `GeoLocation`, or `null`.

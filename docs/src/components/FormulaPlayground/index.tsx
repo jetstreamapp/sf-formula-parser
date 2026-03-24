@@ -1,11 +1,11 @@
 import { useState, useCallback, type KeyboardEvent, type ReactNode } from 'react';
 import { evaluateFormula, FormulaError } from '@jetstreamapp/sf-formula-parser';
+import type { FormulaReturnType, SchemaInput } from '@jetstreamapp/sf-formula-parser';
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?$/;
 
 /** Recursively walk a parsed JSON context and convert ISO date strings to Date objects. */
 function coerceDates(obj: Record<string, unknown>): Record<string, unknown> {
-  // Walk the record (flat object with fields and nested related records)
   if (obj.record && typeof obj.record === 'object') {
     coerceRecordDates(obj.record as Record<string, unknown>);
   }
@@ -31,7 +31,25 @@ function coerceRecordDates(record: Record<string, unknown>): void {
   }
 }
 
-const EXAMPLE_FORMULAS = [
+const RETURN_TYPE_OPTIONS: { value: '' | FormulaReturnType; label: string }[] = [
+  { value: '', label: 'None (skip validation)' },
+  { value: 'number', label: 'Number' },
+  { value: 'string', label: 'Text' },
+  { value: 'boolean', label: 'Boolean' },
+  { value: 'date', label: 'Date' },
+  { value: 'datetime', label: 'Date/Time' },
+  { value: 'time', label: 'Time' },
+];
+
+interface ExampleFormula {
+  label: string;
+  formula: string;
+  context: string;
+  returnType?: FormulaReturnType | '';
+  schema?: string;
+}
+
+const EXAMPLE_FORMULAS: ExampleFormula[] = [
   {
     label: 'Basic IF',
     formula: 'IF(Amount > 1000, "Large Deal", "Small Deal")',
@@ -72,6 +90,44 @@ const EXAMPLE_FORMULAS = [
     formula: 'BLANKVALUE(Phone, "No phone on file")',
     context: '{\n  "record": {\n    "Phone": null\n  }\n}',
   },
+  {
+    label: 'Return type validation',
+    formula: 'Amount + 1',
+    context: '{\n  "record": {\n    "Amount": 100\n  }\n}',
+    returnType: 'number',
+  },
+  {
+    label: 'Type mismatch error',
+    formula: '1 + 2',
+    context: '{\n  "record": {}\n}',
+    returnType: 'string',
+  },
+  {
+    label: 'Schema + ISPICKVAL',
+    formula: 'ISPICKVAL(Status, "Active")',
+    context: '{\n  "record": {\n    "Status": "Active"\n  }\n}',
+    schema: '[\n  { "name": "Status", "type": "picklist" },\n  { "name": "Name", "type": "string" }\n]',
+    returnType: 'boolean',
+  },
+  {
+    label: 'Picklist error',
+    formula: 'UPPER(Status)',
+    context: '{\n  "record": {\n    "Status": "Active"\n  }\n}',
+    schema: '[\n  { "name": "Status", "type": "picklist" }\n]',
+  },
+  {
+    label: 'Schema + related field',
+    formula: 'Name & " (" & TEXT(Account.Industry) & ")"',
+    context: '{\n  "record": {\n    "Name": "Acme Corp",\n    "Account": {\n      "Industry": "Technology"\n    }\n  }\n}',
+    schema:
+      '{\n  "$record": [\n    { "name": "Name", "type": "string" },\n    { "name": "AccountId", "type": "reference" }\n  ],\n  "Account": [\n    { "name": "Name", "type": "string" },\n    { "name": "Industry", "type": "picklist" }\n  ]\n}',
+    returnType: 'string',
+  },
+  {
+    label: 'Operator type error',
+    formula: 'true + true',
+    context: '{\n  "record": {}\n}',
+  },
 ];
 
 interface PlaygroundResult {
@@ -80,7 +136,7 @@ interface PlaygroundResult {
   error?: boolean;
 }
 
-function runEvaluate(formula: string, contextJson: string): PlaygroundResult {
+function runEvaluate(formula: string, contextJson: string, returnType: FormulaReturnType | '', schemaJson: string): PlaygroundResult {
   if (!formula.trim()) {
     return { value: 'Enter a formula above', type: 'hint' };
   }
@@ -94,8 +150,21 @@ function runEvaluate(formula: string, contextJson: string): PlaygroundResult {
 
   coerceDates(ctx);
 
+  let schema: SchemaInput | undefined;
+  if (schemaJson.trim()) {
+    try {
+      schema = JSON.parse(schemaJson);
+    } catch {
+      return { value: 'Invalid JSON in schema', type: 'error', error: true };
+    }
+  }
+
+  const options: Record<string, unknown> = {};
+  if (returnType) options.returnType = returnType;
+  if (schema) options.schema = schema;
+
   try {
-    const result = evaluateFormula(formula, ctx as any);
+    const result = evaluateFormula(formula, ctx as any, Object.keys(options).length > 0 ? (options as any) : undefined);
 
     if (result === null) {
       return { value: 'null', type: 'null' };
@@ -131,6 +200,16 @@ interface FormulaPlaygroundProps {
   compact?: boolean;
 }
 
+const selectStyle = {
+  padding: '0.35rem 0.5rem',
+  borderRadius: '6px',
+  border: '1px solid var(--ifm-color-emphasis-300)',
+  background: 'var(--ifm-background-surface-color)',
+  color: 'var(--ifm-font-color-base)',
+  fontSize: '0.8rem',
+  cursor: 'pointer',
+} as const;
+
 export default function FormulaPlayground({
   defaultFormula = 'IF(Amount > 1000, "Large Deal", "Small Deal")',
   defaultContext = '{\n  "record": {\n    "Amount": 5000\n  }\n}',
@@ -138,20 +217,22 @@ export default function FormulaPlayground({
 }: FormulaPlaygroundProps): ReactNode {
   const [formula, setFormula] = useState(defaultFormula);
   const [context, setContext] = useState(defaultContext);
+  const [returnType, setReturnType] = useState<FormulaReturnType | ''>('');
+  const [schema, setSchema] = useState('');
   const [result, setResult] = useState<PlaygroundResult | null>(null);
 
   const handleRun = useCallback(() => {
-    setResult(runEvaluate(formula, context));
-  }, [formula, context]);
+    setResult(runEvaluate(formula, context, returnType, schema));
+  }, [formula, context, returnType, schema]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
         e.preventDefault();
-        setResult(runEvaluate(formula, context));
+        setResult(runEvaluate(formula, context, returnType, schema));
       }
     },
-    [formula, context],
+    [formula, context, returnType, schema],
   );
 
   const handleFormatJson = useCallback(() => {
@@ -163,9 +244,20 @@ export default function FormulaPlayground({
     }
   }, [context]);
 
-  const handleExample = useCallback((ex: (typeof EXAMPLE_FORMULAS)[0]) => {
+  const handleFormatSchema = useCallback(() => {
+    try {
+      const parsed = JSON.parse(schema);
+      setSchema(JSON.stringify(parsed, null, 2));
+    } catch {
+      // Don't format if JSON is invalid
+    }
+  }, [schema]);
+
+  const handleExample = useCallback((ex: ExampleFormula) => {
     setFormula(ex.formula);
     setContext(ex.context);
+    setReturnType(ex.returnType ?? '');
+    setSchema(ex.schema ?? '');
     setResult(null);
   }, []);
 
@@ -244,6 +336,78 @@ export default function FormulaPlayground({
               onKeyDown={handleKeyDown}
               spellCheck={false}
             />
+          </div>
+
+          <div style={{ marginTop: '0.5rem', display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div>
+              <label
+                style={{
+                  display: 'block',
+                  fontSize: '0.8rem',
+                  fontWeight: 600,
+                  marginBottom: '0.25rem',
+                  color: 'var(--ifm-color-emphasis-700)',
+                }}
+              >
+                Return Type
+              </label>
+              <select
+                value={returnType}
+                onChange={e => {
+                  setReturnType(e.target.value as FormulaReturnType | '');
+                  setResult(null);
+                }}
+                style={selectStyle}
+              >
+                {RETURN_TYPE_OPTIONS.map(opt => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="playground-panel">
+              <div className="playground-panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>Field Schema (JSON, optional)</span>
+                <button
+                  onClick={handleFormatSchema}
+                  style={{
+                    padding: '0.15rem 0.5rem',
+                    borderRadius: '4px',
+                    border: '1px solid var(--ifm-color-emphasis-300)',
+                    background: 'transparent',
+                    color: 'var(--ifm-color-emphasis-600)',
+                    fontSize: '0.7rem',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.03em',
+                  }}
+                >
+                  Format
+                </button>
+              </div>
+              <textarea
+                className="playground-context-editor"
+                value={schema}
+                onChange={e => {
+                  setSchema(e.target.value);
+                  setResult(null);
+                }}
+                onKeyDown={handleKeyDown}
+                placeholder={`{
+  "$record": [
+    { "name": "Name", "type": "string" },
+  ],
+  "Account": [
+    { "name": "Name", "type": "string" },
+  ]
+}`}
+                spellCheck={false}
+                style={{ minHeight: '60px' }}
+              />
+            </div>
           </div>
 
           <button className="playground-run-btn" onClick={handleRun}>

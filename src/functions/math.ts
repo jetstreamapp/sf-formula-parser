@@ -68,6 +68,8 @@ function evalVal(ctx: FunctionContext, index: number): FormulaValue {
 export function registerMathFunctions(registry: FunctionRegistry): void {
   // 1. ABS
   registry.register('ABS', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'ABS()'. Expected 1, received " + ctx.args.length);
     const n = evalNum(ctx, 0);
     if (n === null) return null;
     return Math.abs(n);
@@ -75,6 +77,8 @@ export function registerMathFunctions(registry: FunctionRegistry): void {
 
   // 2. CEILING — rounds AWAY from zero (up magnitude) for both positive and negative
   registry.register('CEILING', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'CEILING()'. Expected 1, received " + ctx.args.length);
     const n = evalNum(ctx, 0);
     if (n === null) return null;
     const pr = preRoundHalfDown(n);
@@ -85,6 +89,8 @@ export function registerMathFunctions(registry: FunctionRegistry): void {
 
   // 3. FLOOR — rounds toward zero for negatives (= Math.trunc with pre-rounding)
   registry.register('FLOOR', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'FLOOR()'. Expected 1, received " + ctx.args.length);
     const n = evalNum(ctx, 0);
     if (n === null) return null;
     const pr = preRoundHalfDown(n);
@@ -95,6 +101,8 @@ export function registerMathFunctions(registry: FunctionRegistry): void {
 
   // 4. MCEILING — mathematical ceiling, always toward +inf
   registry.register('MCEILING', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'MCEILING()'. Expected 1, received " + ctx.args.length);
     const n = evalNum(ctx, 0);
     if (n === null) return null;
     const result = Math.ceil(n);
@@ -104,6 +112,8 @@ export function registerMathFunctions(registry: FunctionRegistry): void {
 
   // 5. MFLOOR — mathematical floor, always toward -inf
   registry.register('MFLOOR', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'MFLOOR()'. Expected 1, received " + ctx.args.length);
     const n = evalNum(ctx, 0);
     if (n === null) return null;
     return Math.floor(n);
@@ -111,6 +121,8 @@ export function registerMathFunctions(registry: FunctionRegistry): void {
 
   // 6. ROUND
   registry.register('ROUND', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 2)
+      throw new FormulaError("Incorrect number of parameters for function 'ROUND()'. Expected 2, received " + ctx.args.length);
     const n = evalNum(ctx, 0);
     const scale = evalNum(ctx, 1);
     if (n === null || scale === null) return null;
@@ -119,6 +131,8 @@ export function registerMathFunctions(registry: FunctionRegistry): void {
 
   // 7. TRUNC
   registry.register('TRUNC', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length < 1 || ctx.args.length > 2)
+      throw new FormulaError("Incorrect number of parameters for function 'TRUNC()'. Expected 1-2, received " + ctx.args.length);
     const n = evalNum(ctx, 0);
     if (n === null) return null;
     const scale = ctx.args.length > 1 ? evalNum(ctx, 1) : 0;
@@ -128,6 +142,8 @@ export function registerMathFunctions(registry: FunctionRegistry): void {
 
   // 8. MOD
   registry.register('MOD', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 2)
+      throw new FormulaError("Incorrect number of parameters for function 'MOD()'. Expected 2, received " + ctx.args.length);
     const n = evalNum(ctx, 0);
     const d = evalNum(ctx, 1);
     if (n === null || d === null) return null;
@@ -137,6 +153,8 @@ export function registerMathFunctions(registry: FunctionRegistry): void {
 
   // 9. MAX (variadic)
   registry.register('MAX', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length < 1)
+      throw new FormulaError("Incorrect number of parameters for function 'MAX()'. Expected 1+, received " + ctx.args.length);
     let result: number | null = null;
     for (let i = 0; i < ctx.args.length; i++) {
       const n = evalNum(ctx, i);
@@ -148,6 +166,8 @@ export function registerMathFunctions(registry: FunctionRegistry): void {
 
   // 10. MIN (variadic)
   registry.register('MIN', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length < 1)
+      throw new FormulaError("Incorrect number of parameters for function 'MIN()'. Expected 1+, received " + ctx.args.length);
     let result: number | null = null;
     for (let i = 0; i < ctx.args.length; i++) {
       const n = evalNum(ctx, i);
@@ -159,6 +179,8 @@ export function registerMathFunctions(registry: FunctionRegistry): void {
 
   // 11. EXP
   registry.register('EXP', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'EXP()'. Expected 1, received " + ctx.args.length);
     const n = evalNum(ctx, 0);
     if (n === null) return null;
     return Math.exp(n);
@@ -166,6 +188,8 @@ export function registerMathFunctions(registry: FunctionRegistry): void {
 
   // 12. LN
   registry.register('LN', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'LN()'. Expected 1, received " + ctx.args.length);
     const n = evalNum(ctx, 0);
     if (n === null) return null;
     return Math.log(n);
@@ -173,6 +197,8 @@ export function registerMathFunctions(registry: FunctionRegistry): void {
 
   // 13. LOG
   registry.register('LOG', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'LOG()'. Expected 1, received " + ctx.args.length);
     const n = evalNum(ctx, 0);
     if (n === null) return null;
     return Math.log10(n);
@@ -180,6 +206,8 @@ export function registerMathFunctions(registry: FunctionRegistry): void {
 
   // 14. SQRT
   registry.register('SQRT', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 1)
+      throw new FormulaError("Incorrect number of parameters for function 'SQRT()'. Expected 1, received " + ctx.args.length);
     const n = evalNum(ctx, 0);
     if (n === null) return null;
     return Math.sqrt(n);
@@ -187,11 +215,15 @@ export function registerMathFunctions(registry: FunctionRegistry): void {
 
   // 15. PI
   registry.register('PI', (_ctx: FunctionContext): FormulaValue => {
+    if (_ctx.args.length !== 0)
+      throw new FormulaError("Incorrect number of parameters for function 'PI()'. Expected 0, received " + _ctx.args.length);
     return Math.PI;
   });
 
   // 16. POWER
   registry.register('POWER', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 2)
+      throw new FormulaError("Incorrect number of parameters for function 'POWER()'. Expected 2, received " + ctx.args.length);
     const base = evalNum(ctx, 0);
     const exp = evalNum(ctx, 1);
     if (base === null || exp === null) return null;
@@ -207,11 +239,15 @@ export function registerMathFunctions(registry: FunctionRegistry): void {
 
   // 17. RAND
   registry.register('RAND', (_ctx: FunctionContext): FormulaValue => {
+    if (_ctx.args.length !== 0)
+      throw new FormulaError("Incorrect number of parameters for function 'RAND()'. Expected 0, received " + _ctx.args.length);
     return Math.random();
   });
 
   // 18. DISTANCE
   registry.register('DISTANCE', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 3)
+      throw new FormulaError("Incorrect number of parameters for function 'DISTANCE()'. Expected 3, received " + ctx.args.length);
     const loc1 = evalVal(ctx, 0);
     const loc2 = evalVal(ctx, 1);
     const unitVal = evalVal(ctx, 2);
@@ -238,9 +274,17 @@ export function registerMathFunctions(registry: FunctionRegistry): void {
 
   // 19. GEOLOCATION
   registry.register('GEOLOCATION', (ctx: FunctionContext): FormulaValue => {
+    if (ctx.args.length !== 2)
+      throw new FormulaError("Incorrect number of parameters for function 'GEOLOCATION()'. Expected 2, received " + ctx.args.length);
     const lat = evalNum(ctx, 0);
     const lng = evalNum(ctx, 1);
     if (lat === null || lng === null) return null;
+    if (lat < -90 || lat > 90) {
+      throw new FormulaError('GEOLOCATION: latitude must be between -90 and 90');
+    }
+    if (lng < -180 || lng > 180) {
+      throw new FormulaError('GEOLOCATION: longitude must be between -180 and 180');
+    }
     return { latitude: lat, longitude: lng } as GeoLocation;
   });
 }
