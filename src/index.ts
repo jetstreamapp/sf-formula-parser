@@ -48,9 +48,8 @@ function isCompatibleReturnType(value: FormulaValue, returnType: FormulaReturnTy
     case 'boolean':
       return typeof value === 'boolean';
     case 'date':
-      return isDate(value) && isDateOnly(value);
     case 'datetime':
-      return isDate(value) && !isDateOnly(value);
+      return isDate(value);
     case 'time':
       return isSfTime(value);
   }
@@ -96,7 +95,7 @@ export { FormulaError, LexerError, ParseError } from './evaluator/errors.js';
 export { FunctionRegistry, createDefaultRegistry } from './functions/registry.js';
 export { Parser } from './parser/index.js';
 export { Evaluator } from './evaluator/evaluator.js';
-export { isBlank, isSfTime, isGeoLocation, isDate, toNumber, toText, toBoolean } from './evaluator/coercion.js';
+export { isBlank, isSfTime, isGeoLocation, isDate, isDateOnly, toNumber, toText, toBoolean } from './evaluator/coercion.js';
 export { extractFields, extractFieldsByCategory } from './extract.js';
 export type { ExtractedFields } from './extract.js';
 export { walkAST } from './parser/walk.js';

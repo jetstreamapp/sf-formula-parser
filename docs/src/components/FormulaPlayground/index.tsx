@@ -1,5 +1,5 @@
 import { useState, useCallback, type KeyboardEvent, type ReactNode } from 'react';
-import { evaluateFormula, FormulaError } from '@jetstreamapp/sf-formula-parser';
+import { evaluateFormula, FormulaError, isDateOnly } from '@jetstreamapp/sf-formula-parser';
 import type { FormulaReturnType, SchemaInput } from '@jetstreamapp/sf-formula-parser';
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?$/;
@@ -170,7 +170,8 @@ function runEvaluate(formula: string, contextJson: string, returnType: FormulaRe
       return { value: 'null', type: 'null' };
     }
     if (result instanceof Date) {
-      return { value: result.toISOString(), type: 'Date' };
+      const dateOnly = isDateOnly(result);
+      return { value: dateOnly ? result.toISOString().substring(0, 10) : result.toISOString(), type: dateOnly ? 'Date' : 'Date/Time' };
     }
     if (typeof result === 'object' && result !== null && 'timeInMillis' in result) {
       const ms = (result as { timeInMillis: number }).timeInMillis;

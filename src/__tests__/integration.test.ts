@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { ALL_TEST_SUITES } from './test-cases.js';
-import { evaluateFormula } from '../index.js';
+import { evaluateFormula, isDateOnly } from '../index.js';
+import type { FieldSchema } from '../evaluator/schema.js';
 import { FormulaError } from '../evaluator/errors.js';
 import type { FormulaContext } from '../evaluator/context.js';
 
@@ -193,12 +194,14 @@ describe('return type validation', () => {
     expect(() => evaluateFormula('DATE(2024, 1, 15)', ctx, { returnType: 'number' })).toThrow(FormulaError);
   });
 
-  it('datetime result with returnType date throws', () => {
-    expect(() => evaluateFormula('DATETIMEVALUE("2024-01-15 12:00:00")', ctx, { returnType: 'date' })).toThrow(FormulaError);
+  it('datetime result with returnType date is allowed (Salesforce compatible)', () => {
+    const result = evaluateFormula('DATETIMEVALUE("2024-01-15 12:00:00")', ctx, { returnType: 'date' });
+    expect(result).toBeInstanceOf(Date);
   });
 
-  it('date result with returnType datetime throws', () => {
-    expect(() => evaluateFormula('DATE(2024, 1, 15)', ctx, { returnType: 'datetime' })).toThrow(FormulaError);
+  it('date result with returnType datetime is allowed (Salesforce compatible)', () => {
+    const result = evaluateFormula('DATE(2024, 1, 15)', ctx, { returnType: 'datetime' });
+    expect(result).toBeInstanceOf(Date);
   });
 
   it('number result with returnType boolean throws', () => {
@@ -229,8 +232,6 @@ describe('return type validation', () => {
 // ============================================================================
 // Schema validation tests
 // ============================================================================
-
-import type { FieldSchema } from '../evaluator/schema.js';
 
 describe('schema validation', () => {
   const schema: FieldSchema[] = [
@@ -473,5 +474,176 @@ describe('schema validation with relationships', () => {
       account: [{ name: 'Name', type: 'string' }],
     };
     expect(evaluateFormula('Account.Name', ctx, { schema: schemaWithCase })).toBe('Parent Corp');
+  });
+});
+
+// ============================================================================
+// Schema-based type coercion for date/datetime/time fields
+// ============================================================================
+
+describe('schema-based type coercion', () => {
+  const schema: Record<string, FieldSchema[]> = {
+    $record: [
+      { name: 'CreatedDate', type: 'datetime' },
+      { name: 'CloseDate', type: 'date' },
+      { name: 'StartTime', type: 'time' },
+      { name: 'Name', type: 'string' },
+    ],
+  };
+
+  const ctx = {
+    record: {
+      CreatedDate: '2024-01-15T12:00:00.000Z',
+      CloseDate: '2024-06-15',
+      StartTime: '13:30:00.000Z',
+      Name: 'Test',
+    },
+  };
+
+  // ── Datetime fields coerced from strings ──
+  it('datetime + datetime throws error when schema is provided', () => {
+    expect(() => evaluateFormula('CreatedDate + CreatedDate', ctx, { schema })).toThrow(/Incorrect parameter type for operator/);
+  });
+
+  it('datetime + datetime + string throws error (left-to-right evaluation)', () => {
+    expect(() => evaluateFormula('CreatedDate + CreatedDate + "test"', ctx, { schema })).toThrow(/Incorrect parameter type for operator/);
+  });
+
+  it('datetime + number adds days correctly', () => {
+    const result = evaluateFormula('CreatedDate + 1', ctx, { schema });
+    expect(result).toBeInstanceOf(Date);
+    expect((result as Date).toISOString()).toBe('2024-01-16T12:00:00.000Z');
+  });
+
+  it('datetime - datetime returns number of days', () => {
+    const schema2: Record<string, FieldSchema[]> = {
+      $record: [
+        { name: 'StartDate', type: 'datetime' },
+        { name: 'EndDate', type: 'datetime' },
+      ],
+    };
+    const ctx2 = {
+      record: {
+        StartDate: '2024-01-15T12:00:00.000Z',
+        EndDate: '2024-01-17T12:00:00.000Z',
+      },
+    };
+    expect(evaluateFormula('EndDate - StartDate', ctx2, { schema: schema2 })).toBe(2);
+  });
+
+  // ── Date fields coerced from strings ──
+  it('date + date throws error when schema is provided', () => {
+    const schema2: Record<string, FieldSchema[]> = {
+      $record: [
+        { name: 'DateA', type: 'date' },
+        { name: 'DateB', type: 'date' },
+      ],
+    };
+    const ctx2 = { record: { DateA: '2024-01-15', DateB: '2024-01-20' } };
+    expect(() => evaluateFormula('DateA + DateB', ctx2, { schema: schema2 })).toThrow(/Incorrect parameter type for operator/);
+  });
+
+  it('date + number adds days correctly', () => {
+    const result = evaluateFormula('CloseDate + 5', ctx, { schema });
+    expect(result).toBeInstanceOf(Date);
+    expect((result as Date).toISOString()).toContain('2024-06-20');
+  });
+
+  // ── Time fields coerced from strings ──
+  it('time + time throws error when schema is provided', () => {
+    const schema2: Record<string, FieldSchema[]> = {
+      $record: [
+        { name: 'TimeA', type: 'time' },
+        { name: 'TimeB', type: 'time' },
+      ],
+    };
+    const ctx2 = { record: { TimeA: '10:00:00.000Z', TimeB: '14:00:00.000Z' } };
+    expect(() => evaluateFormula('TimeA + TimeB', ctx2, { schema: schema2 })).toThrow(/Incorrect parameter type for operator/);
+  });
+
+  it('time + number adds milliseconds correctly', () => {
+    const result = evaluateFormula('StartTime + 3600000', ctx, { schema }) as { timeInMillis: number };
+    expect(result).toHaveProperty('timeInMillis');
+    // 13:30 + 1 hour = 14:30 = 52200000ms
+    expect(result.timeInMillis).toBe(52200000);
+  });
+
+  // ── Date-only value with datetime schema ──
+  it('date-only string value treated as date even with datetime schema', () => {
+    const dateOnlyCtx = { record: { CreatedDate: '2026-03-24' } };
+    const result = evaluateFormula('CreatedDate + 365', dateOnlyCtx, { schema });
+    expect(result).toBeInstanceOf(Date);
+    // Should remain date-only (no time component), not become datetime
+    const d = result as Date;
+    expect(d.getUTCHours()).toBe(0);
+    expect(d.getUTCMinutes()).toBe(0);
+    expect(d.getUTCSeconds()).toBe(0);
+    expect(d.toISOString()).toBe('2027-03-24T00:00:00.000Z');
+  });
+
+  it('date-only string value treated as date with date schema', () => {
+    const dateOnlyCtx = { record: { CloseDate: '2026-03-24' } };
+    const result = evaluateFormula('CloseDate + 365', dateOnlyCtx, { schema });
+    expect(result).toBeInstanceOf(Date);
+    const d = result as Date;
+    expect(d.getUTCHours()).toBe(0);
+    expect(d.toISOString()).toBe('2027-03-24T00:00:00.000Z');
+  });
+
+  // ── Datetime arithmetic preserves datetime marker ──
+  it('datetime + number result is still datetime (not date-only)', () => {
+    const result = evaluateFormula('CreatedDate + 1', ctx, { schema, returnType: 'datetime' });
+    expect(result).toBeInstanceOf(Date);
+    expect((result as Date).toISOString()).toBe('2024-01-16T12:00:00.000Z');
+  });
+
+  it('date + number result is date-only (compatible with returnType date)', () => {
+    const result = evaluateFormula('CloseDate + 5', ctx, { schema, returnType: 'date' });
+    expect(result).toBeInstanceOf(Date);
+  });
+
+  // ── Midnight datetime is still datetime (not date-only) ──
+  it('midnight datetime string is treated as datetime, not date-only', () => {
+    const midnightCtx = { record: { CreatedDate: '2024-01-15T00:00:00.000Z' } };
+    const result = evaluateFormula('CreatedDate + 1', midnightCtx, { schema });
+    expect(result).toBeInstanceOf(Date);
+    expect(isDateOnly(result as Date)).toBe(false);
+  });
+
+  it('midnight datetime + midnight datetime throws (not silently concatenated)', () => {
+    const midnightCtx = { record: { CreatedDate: '2024-01-15T00:00:00.000Z' } };
+    expect(() => evaluateFormula('CreatedDate + CreatedDate', midnightCtx, { schema })).toThrow(/Incorrect parameter type/);
+  });
+
+  // ── Time fractional seconds normalization ──
+  it('time with 1-digit fractional seconds normalizes correctly', () => {
+    const timeSchema: Record<string, FieldSchema[]> = { $record: [{ name: 'T', type: 'time' }] };
+    // ".5" should be 500ms, not 5ms
+    const result = evaluateFormula('T + 0', { record: { T: '01:00:00.5' } }, { schema: timeSchema }) as { timeInMillis: number };
+    expect(result.timeInMillis).toBe(3600500);
+  });
+
+  it('time with 2-digit fractional seconds normalizes correctly', () => {
+    const timeSchema: Record<string, FieldSchema[]> = { $record: [{ name: 'T', type: 'time' }] };
+    // ".50" should be 500ms
+    const result = evaluateFormula('T + 0', { record: { T: '01:00:00.50' } }, { schema: timeSchema }) as { timeInMillis: number };
+    expect(result.timeInMillis).toBe(3600500);
+  });
+
+  // ── Without schema, string behavior is preserved ──
+  it('datetime fields without schema remain strings (backward compatible)', () => {
+    const result = evaluateFormula('CreatedDate + CreatedDate + "test"', ctx);
+    expect(typeof result).toBe('string');
+  });
+
+  // ── Mixed operations ──
+  it('datetime field compared correctly when schema is provided', () => {
+    expect(evaluateFormula('CreatedDate < CloseDate', ctx, { schema })).toBe(true);
+  });
+
+  it('YEAR/MONTH/DAY work on schema-coerced date fields', () => {
+    expect(evaluateFormula('YEAR(CloseDate)', ctx, { schema })).toBe(2024);
+    expect(evaluateFormula('MONTH(CloseDate)', ctx, { schema })).toBe(6);
+    expect(evaluateFormula('DAY(CloseDate)', ctx, { schema })).toBe(15);
   });
 });

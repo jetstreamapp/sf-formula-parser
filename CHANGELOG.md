@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Fixed
+
+- **Schema-based type coercion for date/datetime/time fields** — when a schema is provided, field values stored as strings in the record (e.g., `"2024-01-15T12:00:00.000Z"` for a datetime field) are now automatically coerced to their proper types (`Date` for date/datetime, `SfTime` for time). Previously, operators like `+` would see two strings and concatenate instead of enforcing type rules (e.g., `CreatedDate + CreatedDate + "test"` returned a concatenated string instead of throwing an error)
+- **Date-only values preserved through arithmetic** — date-only field values (e.g., `"2026-03-24"`) are now correctly treated as date-only even when the schema declares `datetime`. Date arithmetic (`Date + Number`) preserves date-only status, and datetime arithmetic (`DateTime + Number`) preserves the datetime marker on the result
+
 ## [2.0.0] - 2026-03-24
 
 ### Added
