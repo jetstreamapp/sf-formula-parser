@@ -61,6 +61,18 @@ function HomepageHeader() {
           >
             Try the Playground
           </Link>
+          <Link
+            className="button button--secondary button--lg"
+            to="/llms-full.txt"
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.15)',
+              color: 'rgba(255,255,255,0.8)',
+              fontSize: '0.9rem',
+            }}
+          >
+            LLM Docs
+          </Link>
         </div>
       </div>
     </header>
