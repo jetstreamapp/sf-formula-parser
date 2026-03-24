@@ -90,6 +90,21 @@ const config: Config = {
           position: 'left',
         },
         {
+          type: 'dropdown',
+          label: 'LLM Docs',
+          position: 'right',
+          items: [
+            {
+              href: '/llms.txt',
+              label: 'llms.txt (summary)',
+            },
+            {
+              href: '/llms-full.txt',
+              label: 'llms-full.txt (complete)',
+            },
+          ],
+        },
+        {
           href: 'https://github.com/austinturner/sf-formula-parser',
           label: 'GitHub',
           position: 'right',
@@ -127,6 +142,14 @@ const config: Config = {
             {
               label: 'Playground',
               to: '/playground',
+            },
+            {
+              label: 'LLM Docs (llms.txt)',
+              to: '/llms.txt',
+            },
+            {
+              label: 'LLM Docs (full)',
+              to: '/llms-full.txt',
             },
           ],
         },
