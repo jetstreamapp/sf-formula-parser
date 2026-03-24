@@ -95,11 +95,11 @@ const config: Config = {
           position: 'right',
           items: [
             {
-              href: '/llms.txt',
+              href: 'https://sf-formula-parser.getjetstream.app/llms.txt',
               label: 'llms.txt (summary)',
             },
             {
-              href: '/llms-full.txt',
+              href: 'https://sf-formula-parser.getjetstream.app/llms-full.txt',
               label: 'llms-full.txt (complete)',
             },
           ],
@@ -145,11 +145,11 @@ const config: Config = {
             },
             {
               label: 'LLM Docs (llms.txt)',
-              to: '/llms.txt',
+              href: 'https://sf-formula-parser.getjetstream.app/llms.txt',
             },
             {
               label: 'LLM Docs (full)',
-              to: '/llms-full.txt',
+              href: 'https://sf-formula-parser.getjetstream.app/llms-full.txt',
             },
           ],
         },
