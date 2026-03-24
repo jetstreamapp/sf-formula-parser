@@ -61,9 +61,9 @@ function HomepageHeader() {
           >
             Try the Playground
           </Link>
-          <Link
+          <a
             className="button button--secondary button--lg"
-            to="/llms-full.txt"
+            href="https://sf-formula-parser.getjetstream.app/llms-full.txt"
             style={{
               background: 'rgba(255,255,255,0.05)',
               border: '1px solid rgba(255,255,255,0.15)',
@@ -72,7 +72,7 @@ function HomepageHeader() {
             }}
           >
             LLM Docs
-          </Link>
+          </a>
         </div>
       </div>
     </header>

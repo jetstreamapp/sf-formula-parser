@@ -21,3 +21,40 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
+
+  docs-build:
+    runs-on: ubuntu-latest
+    # Only run when docs-related files change
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: dorny/paths-filter@v3
+        id: changes
+        with:
+          filters: |
+            docs:
+              - 'docs/**'
+
+      - name: Use Node.js 24
+        if: steps.changes.outputs.docs == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            docs/package-lock.json
+
+      - name: Build library
+        if: steps.changes.outputs.docs == 'true'
+        run: |
+          npm ci
+          npm run build
+
+      - name: Build docs
+        if: steps.changes.outputs.docs == 'true'
+        run: |
+          npm ci
+          npm run build
+        working-directory: docs
