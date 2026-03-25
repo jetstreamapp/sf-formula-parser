@@ -3,7 +3,7 @@ import type { FormulaValue, FormulaContext, FormulaRecord, EvaluationOptions, Sf
 import { isFormulaValue, isFormulaRecord } from './context.js';
 import { FormulaError } from './errors.js';
 import { FunctionRegistry } from '../functions/registry.js';
-import { isSfTime, isDate, isDateOnly, isGeoLocation, toNumber, toBoolean, toText } from './coercion.js';
+import { isSfTime, isDate, isDateOnly, isGeoLocation, toNumber, toBoolean, toText, markDateTime } from './coercion.js';
 import { SchemaMap, SCHEMA_SELF_KEY, markPicklist, markMultipicklist, isAnyPicklistValue, getPicklistFieldName } from './schema.js';
 
 const MS_PER_DAY = 86_400_000;
@@ -137,7 +137,7 @@ export class Evaluator {
     return null;
   }
 
-  /** Apply picklist/multipicklist markers based on schema info. */
+  /** Apply picklist/multipicklist markers and coerce date/datetime/time values based on schema info. */
   private applySchemaMarkers(value: FormulaValue, fieldNameLower: string, schemaPath: string): FormulaValue {
     if (!this.schemaMap || value === null) return value;
     const fieldInfo =
@@ -149,6 +149,52 @@ export class Evaluator {
     }
     if (fieldInfo.formulaType === 'multipicklist' && typeof value === 'string') {
       return markMultipicklist(value, fieldNameLower);
+    }
+    // Coerce values to Date objects when schema declares date/datetime.
+    // Uses strict ISO-based parsing (Date.UTC) for deterministic, timezone-safe results
+    // consistent with the library's DATEVALUE/DATETIMEVALUE functions.
+    if (fieldInfo.formulaType === 'datetime' || fieldInfo.formulaType === 'date') {
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        // Try date-only: "YYYY-MM-DD"
+        const dateMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (dateMatch) {
+          const d = new Date(Date.UTC(+dateMatch[1]!, +dateMatch[2]! - 1, +dateMatch[3]!));
+          if (!isNaN(d.getTime())) {
+            // Pure date input — date-only even if schema says datetime
+            return fieldInfo.formulaType === 'datetime' ? d : d;
+          }
+        }
+        // Try ISO datetime: "YYYY-MM-DDTHH:mm:ss", optional fractional seconds, optional Z/offset
+        const dtMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?(Z|[+-]\d{2}:?\d{2})?$/);
+        if (dtMatch) {
+          const d = new Date(trimmed);
+          if (!isNaN(d.getTime())) return markDateTime(d);
+        }
+        // Try space-separated datetime (Salesforce format): "YYYY-MM-DD HH:mm:ss"
+        const sfMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2}):(\d{2})$/);
+        if (sfMatch) {
+          const d = new Date(Date.UTC(+sfMatch[1]!, +sfMatch[2]! - 1, +sfMatch[3]!, +sfMatch[4]!, +sfMatch[5]!, +sfMatch[6]!));
+          if (!isNaN(d.getTime())) return markDateTime(d);
+        }
+      } else if (isDate(value)) {
+        // Already a Date — ensure datetime fields are marked
+        if (fieldInfo.formulaType === 'datetime') {
+          return markDateTime(value as Date);
+        }
+      }
+    }
+    // Coerce string values to SfTime when schema declares time
+    if (fieldInfo.formulaType === 'time' && typeof value === 'string') {
+      // Salesforce time format: "HH:mm:ss.SSSZ" — parse to milliseconds since midnight
+      const match = value.match(/^(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?/);
+      if (match) {
+        // Normalize fractional seconds to milliseconds (pad/truncate to 3 digits)
+        let fraction = match[4] ?? '0';
+        fraction = fraction.length > 3 ? fraction.slice(0, 3) : fraction.padEnd(3, '0');
+        const ms = (+match[1]! * 3600 + +match[2]! * 60 + +match[3]!) * 1000 + +fraction;
+        return { timeInMillis: ms };
+      }
     }
     return value;
   }
@@ -490,19 +536,15 @@ export class Evaluator {
 
   // ── Date/Time arithmetic helpers ──────────────────────────────────
 
-  private isDateOnly(d: Date): boolean {
-    return d.getUTCHours() === 0 && d.getUTCMinutes() === 0 && d.getUTCSeconds() === 0 && d.getUTCMilliseconds() === 0;
-  }
-
   private addDaysToDate(d: Date, days: number): Date {
-    if (this.isDateOnly(d)) {
+    if (isDateOnly(d)) {
       // Date (not DateTime): truncate fractional part
       const wholeDays = Math.trunc(days);
       return new Date(d.getTime() + wholeDays * MS_PER_DAY);
     } else {
       // DateTime: round fractional part to nearest second
       const ms = Math.round((days * MS_PER_DAY) / 1000) * 1000;
-      return new Date(d.getTime() + ms);
+      return markDateTime(new Date(d.getTime() + ms));
     }
   }
 
