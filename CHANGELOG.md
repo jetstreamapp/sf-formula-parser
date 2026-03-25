@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-03-25
+
 ### Fixed
 
 - **Schema-based type coercion for date/datetime/time fields** — when a schema is provided, field values stored as strings in the record (e.g., `"2024-01-15T12:00:00.000Z"` for a datetime field) are now automatically coerced to their proper types (`Date` for date/datetime, `SfTime` for time). Previously, operators like `+` would see two strings and concatenate instead of enforcing type rules (e.g., `CreatedDate + CreatedDate + "test"` returned a concatenated string instead of throwing an error)
@@ -63,3 +65,6 @@ All notable changes to this project will be documented in this file.
 - 883 unit/integration tests
 - Verified against live Salesforce org (47/47 FormulaEval API tests passing)
 - Added documentation site
+
+[Unreleased]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.1.0...HEAD
+[2.1.0]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.0.0...2.1.0
