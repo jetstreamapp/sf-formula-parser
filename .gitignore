@@ -364,3 +364,6 @@ coverage/
 
 # Environment
 .env.local
+
+
+.sfdx
