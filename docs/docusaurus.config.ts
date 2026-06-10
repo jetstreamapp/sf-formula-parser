@@ -105,7 +105,7 @@ const config: Config = {
           ],
         },
         {
-          href: 'https://github.com/austinturner/sf-formula-parser',
+          href: 'https://github.com/jetstreamapp/sf-formula-parser',
           label: 'GitHub',
           position: 'right',
         },
@@ -158,7 +158,7 @@ const config: Config = {
           items: [
             {
               label: 'GitHub',
-              href: 'https://github.com/austinturner/sf-formula-parser',
+              href: 'https://github.com/jetstreamapp/sf-formula-parser',
             },
             {
               label: 'npm',
