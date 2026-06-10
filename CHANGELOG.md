@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Security
+
+- Updated dependencies to latest versions to resolve security vulnerabilities
+
 ## [2.1.0] - 2026-03-25
 
 ### Fixed
