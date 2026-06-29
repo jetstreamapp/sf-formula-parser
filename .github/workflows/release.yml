@@ -48,8 +48,9 @@ jobs:
           git config user.email "jetstream-bot[bot]@users.noreply.github.com"
 
       - name: Release
-        run: npx release-it ${{ inputs.version }} --ci
+        run: npx release-it "$VERSION" --ci
         env:
+          VERSION: ${{ inputs.version }}
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
 
   deploy-docs:
