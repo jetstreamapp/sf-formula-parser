@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2.1.2] - 2026-08-06
+
 ### Removed
 
 - Removed the GitHub Pages docs deployment from the release pipeline — documentation at https://sf-formula-parser.dev is now built and hosted by Cloudflare Pages
@@ -76,6 +78,7 @@ All notable changes to this project will be documented in this file.
 - Verified against live Salesforce org (47/47 FormulaEval API tests passing)
 - Added documentation site
 
-[Unreleased]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.1.1...HEAD
+[Unreleased]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.1.2...HEAD
+[2.1.2]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.1.1...2.1.2
 [2.1.1]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.1.0...2.1.1
 [2.1.0]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.0.0...2.1.0
