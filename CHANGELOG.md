@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Removed
+
+- Removed the GitHub Pages docs deployment from the release pipeline — documentation at https://sf-formula-parser.dev is now built and hosted by Cloudflare Pages
+
 ## [2.1.1] - 2026-06-10
 
 ### Security
