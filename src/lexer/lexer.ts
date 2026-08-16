@@ -1,15 +1,25 @@
 import { LexerError } from '../evaluator/errors.js';
 import { Token, TokenType } from './tokens.js';
 
+export interface LexerOptions {
+  /**
+   * Emit `Comment` tokens instead of silently skipping block comments.
+   * Used by the formatter to preserve comments; the parser does not accept comment tokens.
+   */
+  preserveComments?: boolean;
+}
+
 export class Lexer {
   private source: string;
   private pos: number = 0;
   private line: number = 1;
   private column: number = 1;
   private tokens: Token[] = [];
+  private preserveComments: boolean;
 
-  constructor(source: string) {
+  constructor(source: string, options: LexerOptions = {}) {
     this.source = source;
+    this.preserveComments = options.preserveComments ?? false;
   }
 
   tokenize(): Token[] {
@@ -24,7 +34,7 @@ export class Lexer {
 
       // Block comment
       if (ch === '/' && this.peek(1) === '*') {
-        this.skipBlockComment();
+        this.readBlockComment();
         continue;
       }
 
@@ -52,106 +62,79 @@ export class Lexer {
 
       switch (ch) {
         case '+':
-          this.pushToken(TokenType.Plus, '+', startLine, startCol);
-          this.advance();
+          this.pushOperator(TokenType.Plus, '+', startLine, startCol);
           break;
         case '-':
-          this.pushToken(TokenType.Minus, '-', startLine, startCol);
-          this.advance();
+          this.pushOperator(TokenType.Minus, '-', startLine, startCol);
           break;
         case '*':
-          this.pushToken(TokenType.Star, '*', startLine, startCol);
-          this.advance();
+          this.pushOperator(TokenType.Star, '*', startLine, startCol);
           break;
         case '/':
-          this.pushToken(TokenType.Div, '/', startLine, startCol);
-          this.advance();
+          this.pushOperator(TokenType.Div, '/', startLine, startCol);
           break;
         case '^':
-          this.pushToken(TokenType.Exponent, '^', startLine, startCol);
-          this.advance();
+          this.pushOperator(TokenType.Exponent, '^', startLine, startCol);
           break;
         case '&':
           if (this.peek(1) === '&') {
-            this.pushToken(TokenType.InfixAnd, '&&', startLine, startCol);
-            this.advance();
-            this.advance();
+            this.pushOperator(TokenType.InfixAnd, '&&', startLine, startCol);
           } else {
-            this.pushToken(TokenType.Concat, '&', startLine, startCol);
-            this.advance();
+            this.pushOperator(TokenType.Concat, '&', startLine, startCol);
           }
           break;
         case '|':
           if (this.peek(1) === '|') {
-            this.pushToken(TokenType.InfixOr, '||', startLine, startCol);
-            this.advance();
-            this.advance();
+            this.pushOperator(TokenType.InfixOr, '||', startLine, startCol);
           } else {
             throw new LexerError(`Unexpected character '|'`, startLine, startCol);
           }
           break;
         case '=':
           if (this.peek(1) === '=') {
-            this.pushToken(TokenType.Equal2, '==', startLine, startCol);
-            this.advance();
-            this.advance();
+            this.pushOperator(TokenType.Equal2, '==', startLine, startCol);
           } else {
-            this.pushToken(TokenType.Equal, '=', startLine, startCol);
-            this.advance();
+            this.pushOperator(TokenType.Equal, '=', startLine, startCol);
           }
           break;
         case '!':
           if (this.peek(1) === '=') {
-            this.pushToken(TokenType.NotEqual2, '!=', startLine, startCol);
-            this.advance();
-            this.advance();
+            this.pushOperator(TokenType.NotEqual2, '!=', startLine, startCol);
           } else {
-            this.pushToken(TokenType.Bang, '!', startLine, startCol);
-            this.advance();
+            this.pushOperator(TokenType.Bang, '!', startLine, startCol);
           }
           break;
         case '<':
           if (this.peek(1) === '>') {
-            this.pushToken(TokenType.NotEqual, '<>', startLine, startCol);
-            this.advance();
-            this.advance();
+            this.pushOperator(TokenType.NotEqual, '<>', startLine, startCol);
           } else if (this.peek(1) === '=') {
-            this.pushToken(TokenType.Le, '<=', startLine, startCol);
-            this.advance();
-            this.advance();
+            this.pushOperator(TokenType.Le, '<=', startLine, startCol);
           } else {
-            this.pushToken(TokenType.Lt, '<', startLine, startCol);
-            this.advance();
+            this.pushOperator(TokenType.Lt, '<', startLine, startCol);
           }
           break;
         case '>':
           if (this.peek(1) === '=') {
-            this.pushToken(TokenType.Ge, '>=', startLine, startCol);
-            this.advance();
-            this.advance();
+            this.pushOperator(TokenType.Ge, '>=', startLine, startCol);
           } else {
-            this.pushToken(TokenType.Gt, '>', startLine, startCol);
-            this.advance();
+            this.pushOperator(TokenType.Gt, '>', startLine, startCol);
           }
           break;
         case '(':
-          this.pushToken(TokenType.LeftParen, '(', startLine, startCol);
-          this.advance();
+          this.pushOperator(TokenType.LeftParen, '(', startLine, startCol);
           break;
         case ')':
-          this.pushToken(TokenType.RightParen, ')', startLine, startCol);
-          this.advance();
+          this.pushOperator(TokenType.RightParen, ')', startLine, startCol);
           break;
         case ',':
-          this.pushToken(TokenType.Comma, ',', startLine, startCol);
-          this.advance();
+          this.pushOperator(TokenType.Comma, ',', startLine, startCol);
           break;
         default:
           throw new LexerError(`Unexpected character '${ch}'`, startLine, startCol);
       }
     }
 
-    this.pushToken(TokenType.EOF, '', this.line, this.column);
+    this.pushToken(TokenType.EOF, '', this.line, this.column, this.pos);
     return this.tokens;
   }
 
@@ -171,8 +154,18 @@ export class Lexer {
     return this.source[this.pos + offset];
   }
 
-  private pushToken(type: TokenType, value: string, line: number, column: number): void {
-    this.tokens.push({ type, value, line, column });
+  /** Push a token that ends at the current position (call after consuming the token's characters). */
+  private pushToken(type: TokenType, value: string, line: number, column: number, start: number): void {
+    this.tokens.push({ type, value, line, column, start, end: this.pos });
+  }
+
+  /** Consume `value.length` characters starting at the current position and push the resulting token. */
+  private pushOperator(type: TokenType, value: string, line: number, column: number): void {
+    const start = this.pos;
+    for (let i = 0; i < value.length; i++) {
+      this.advance();
+    }
+    this.pushToken(type, value, line, column, start);
   }
 
   private isIdentStart(ch: string): boolean {
@@ -192,9 +185,10 @@ export class Lexer {
     );
   }
 
-  private skipBlockComment(): void {
+  private readBlockComment(): void {
     const startLine = this.line;
     const startCol = this.column;
+    const start = this.pos;
     // Skip '/*'
     this.advance();
     this.advance();
@@ -203,6 +197,9 @@ export class Lexer {
       if (this.source[this.pos] === '*' && this.peek(1) === '/') {
         this.advance();
         this.advance();
+        if (this.preserveComments) {
+          this.pushToken(TokenType.Comment, this.source.slice(start, this.pos), startLine, startCol, start);
+        }
         return;
       }
       this.advance();
@@ -214,6 +211,7 @@ export class Lexer {
   private readNumber(): void {
     const startLine = this.line;
     const startCol = this.column;
+    const start = this.pos;
     let value = '';
 
     while (this.pos < this.source.length && this.source[this.pos]! >= '0' && this.source[this.pos]! <= '9') {
@@ -236,12 +234,13 @@ export class Lexer {
       }
     }
 
-    this.pushToken(TokenType.NumberLiteral, value, startLine, startCol);
+    this.pushToken(TokenType.NumberLiteral, value, startLine, startCol, start);
   }
 
   private readString(quote: string): void {
     const startLine = this.line;
     const startCol = this.column;
+    const start = this.pos;
     this.advance(); // skip opening quote
     let value = '';
 
@@ -286,7 +285,7 @@ export class Lexer {
 
       if (ch === quote) {
         this.advance(); // skip closing quote
-        this.pushToken(TokenType.StringLiteral, value, startLine, startCol);
+        this.pushToken(TokenType.StringLiteral, value, startLine, startCol, start);
         return;
       }
 
@@ -300,6 +299,7 @@ export class Lexer {
   private readIdentifier(): void {
     const startLine = this.line;
     const startCol = this.column;
+    const start = this.pos;
     let value = '';
 
     while (this.pos < this.source.length && this.isIdentPart(this.source[this.pos]!)) {
@@ -310,13 +310,13 @@ export class Lexer {
     const lower = value.toLowerCase();
 
     if (lower === 'true' || lower === 'false') {
-      this.pushToken(TokenType.BooleanLiteral, value, startLine, startCol);
+      this.pushToken(TokenType.BooleanLiteral, value, startLine, startCol, start);
     } else if (lower === 'null') {
-      this.pushToken(TokenType.NullLiteral, value, startLine, startCol);
+      this.pushToken(TokenType.NullLiteral, value, startLine, startCol, start);
     } else if (lower === 'not') {
-      this.pushToken(TokenType.Not, value, startLine, startCol);
+      this.pushToken(TokenType.Not, value, startLine, startCol, start);
     } else {
-      this.pushToken(TokenType.Identifier, value, startLine, startCol);
+      this.pushToken(TokenType.Identifier, value, startLine, startCol, start);
     }
   }
 }

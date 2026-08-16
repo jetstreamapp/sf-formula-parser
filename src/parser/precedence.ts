@@ -39,3 +39,36 @@ export function getBindingPower(tokenType: TokenType): [number, number] | null {
 }
 
 export const UNARY_BP = 16;
+
+/**
+ * How each binary operator is spelled. Precedence itself is never repeated here — it is read
+ * from `getBindingPower`, so this table can only ever drift in spelling, never in binding power.
+ */
+const OPERATOR_TOKENS: Record<string, TokenType> = {
+  '||': TokenType.InfixOr,
+  '&&': TokenType.InfixAnd,
+  '=': TokenType.Equal,
+  '==': TokenType.Equal2,
+  '<>': TokenType.NotEqual,
+  '!=': TokenType.NotEqual2,
+  '<': TokenType.Lt,
+  '>': TokenType.Gt,
+  '<=': TokenType.Le,
+  '>=': TokenType.Ge,
+  '+': TokenType.Plus,
+  '-': TokenType.Minus,
+  '&': TokenType.Concat,
+  '^': TokenType.Exponent,
+  '*': TokenType.Star,
+  '/': TokenType.Div,
+};
+
+/**
+ * Binding powers looked up by an operator's source spelling, for callers holding operator text
+ * rather than a token — printing an AST back to source. Returns `null` for spellings this
+ * grammar has no operator for, which is only reachable through hand-built ASTs.
+ */
+export function getBindingPowerForOperator(operator: string): [number, number] | null {
+  const tokenType = OPERATOR_TOKENS[operator];
+  return tokenType === undefined ? null : getBindingPower(tokenType);
+}

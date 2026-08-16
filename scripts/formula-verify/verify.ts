@@ -41,9 +41,7 @@ interface TestResult {
 
 async function main() {
   // 1. Load formulas
-  const formulas: { tests: FormulaTest[] } = JSON.parse(
-    readFileSync(resolve(__dirname, 'formulas.json'), 'utf-8')
-  );
+  const formulas: { tests: FormulaTest[] } = JSON.parse(readFileSync(resolve(__dirname, 'formulas.json'), 'utf-8'));
 
   const skipped = formulas.tests.filter(t => t.skip);
   const active = formulas.tests.filter(t => !t.skip);
@@ -88,9 +86,7 @@ async function main() {
 
   // 5. Run formulas through our parser
   // Dynamic import since formula-parser is ESM
-  const { evaluateFormula } = await import(
-    resolve(projectRoot, 'src/index.ts')
-  );
+  const { evaluateFormula } = await import(resolve(projectRoot, 'src/index.ts'));
 
   const results: TestResult[] = [];
 
@@ -162,8 +158,7 @@ function parseSfResults(output: string): Map<string, string> {
 
 function compareResults(ours: unknown, sf: string, returnType: string): boolean {
   if (sf === 'NOT_RUN') return false;
-  if (typeof ours === 'string' && ours.startsWith('ERROR:') && sf.startsWith('ERROR:'))
-    return true;
+  if (typeof ours === 'string' && ours.startsWith('ERROR:') && sf.startsWith('ERROR:')) return true;
 
   const sfClean = sf.trim();
 
@@ -187,9 +182,9 @@ function compareResults(ours: unknown, sf: string, returnType: string): boolean 
 }
 
 function printReport(results: TestResult[]) {
-  const passed = results.filter((r) => r.match);
-  const failed = results.filter((r) => !r.match);
-  const notRun = results.filter((r) => r.sfResult === 'NOT_RUN');
+  const passed = results.filter(r => r.match);
+  const failed = results.filter(r => !r.match);
+  const notRun = results.filter(r => r.sfResult === 'NOT_RUN');
 
   console.log('===================================================');
   console.log('  FORMULA VERIFICATION REPORT');
@@ -226,7 +221,7 @@ function printReport(results: TestResult[]) {
 
   console.log('---------------------------------------------------');
   console.log(
-    `  Total: ${results.length} | Passed: ${passed.length} | Failed: ${failed.length - notRun.length} | Not run: ${notRun.length}`
+    `  Total: ${results.length} | Passed: ${passed.length} | Failed: ${failed.length - notRun.length} | Not run: ${notRun.length}`,
   );
   console.log('---------------------------------------------------\n');
 

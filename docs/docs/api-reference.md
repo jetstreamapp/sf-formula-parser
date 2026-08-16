@@ -136,6 +136,55 @@ const result = extractFieldsByCategory('IF($User.IsActive, $Label.Greeting & " "
 
 ---
 
+### `formatFormula(formula, options?)`
+
+Pretty-print a formula with consistent spacing and indentation. Formatting never changes the meaning of the formula: parentheses, comments, and string/number literals are preserved exactly, and the output always parses to the same AST as the input. Function names and keywords are upper-cased. See [Formatting](/docs/formatting) for the layout rules.
+
+```typescript
+import { formatFormula } from '@jetstreamapp/sf-formula-parser';
+
+formatFormula('if(and(ispickval(StageName,"Closed Won"),Amount>100000),"Big Deal",if(Amount>50000,"Medium Deal","Small Deal"))');
+// IF(
+//   AND(ISPICKVAL(StageName, "Closed Won"), Amount > 100000),
+//   "Big Deal",
+//   IF(Amount > 50000, "Medium Deal", "Small Deal")
+// )
+```
+
+**Parameters:**
+
+| Parameter | Type            | Description                                    |
+| --------- | --------------- | ---------------------------------------------- |
+| `formula` | `string`        | The Salesforce formula string                  |
+| `options` | `FormatOptions` | Optional `printWidth` / `tabWidth` / `useTabs` |
+
+**Returns:** `string` — the formatted formula (no trailing newline). Throws `LexerError` / `ParseError` for invalid formulas.
+
+---
+
+### `formatAST(node, options?)`
+
+Print an `ASTNode` back to formula source using the same layout rules as `formatFormula`. Useful after transforming an AST programmatically. Since the AST carries no parentheses or comments, only the parentheses required by operator precedence are emitted and strings are double-quoted.
+
+```typescript
+import { parseFormula, formatAST } from '@jetstreamapp/sf-formula-parser';
+
+const ast = parseFormula('(a * b) + c');
+formatAST(ast);
+// a * b + c
+```
+
+**Parameters:**
+
+| Parameter | Type            | Description                                    |
+| --------- | --------------- | ---------------------------------------------- |
+| `node`    | `ASTNode`       | The root AST node to print                     |
+| `options` | `FormatOptions` | Optional `printWidth` / `tabWidth` / `useTabs` |
+
+**Returns:** `string` — the formatted formula.
+
+---
+
 ### `walkAST(node, visitor)`
 
 Walk an AST tree in pre-order, calling the visitor function on each node. Useful for building custom analysis tools on top of the parsed AST.
@@ -264,6 +313,24 @@ interface EvaluationOptions {
 | `schema`              | `SchemaInput`       | `undefined`  | Flat `FieldSchema[]` for current object, or `Record<string, FieldSchema[]>` for related/global schemas. Compatible with `describeSObject().fields`. |
 | `treatBlanksAsZeroes` | `boolean`           | `true`       | When `true`, null/blank numeric fields are treated as `0` and blank text fields as `""`. Matches the Salesforce default.                            |
 | `now`                 | `Date`              | `new Date()` | Override the current timestamp. Useful for deterministic tests with `NOW()` and `TODAY()`.                                                          |
+
+### `FormatOptions`
+
+```typescript
+interface FormatOptions {
+  printWidth?: number; // default: 80 — preferred maximum line width
+  tabWidth?: number; // default: 2 — spaces per indent level
+  useTabs?: boolean; // default: false — indent with tabs
+}
+```
+
+Options for [`formatFormula`](#formatformulaformula-options) and [`formatAST`](#formatastnode-options). See [Formatting](/docs/formatting).
+
+| Option       | Type      | Default | Description                                                                                              |
+| ------------ | --------- | ------- | -------------------------------------------------------------------------------------------------------- |
+| `printWidth` | `number`  | `80`    | Preferred maximum line width. Constructs that fit stay on one line; longer ones break one item per line. |
+| `tabWidth`   | `number`  | `2`     | Spaces per indentation level (also the visual width of a tab when `useTabs` is set).                     |
+| `useTabs`    | `boolean` | `false` | Indent with tabs instead of spaces.                                                                      |
 
 ### `FormulaReturnType`
 

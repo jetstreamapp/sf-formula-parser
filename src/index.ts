@@ -99,5 +99,7 @@ export { isBlank, isSfTime, isGeoLocation, isDate, isDateOnly, toNumber, toText,
 export { extractFields, extractFieldsByCategory } from './extract.js';
 export type { ExtractedFields } from './extract.js';
 export { walkAST } from './parser/walk.js';
+export { formatFormula, formatAST } from './format/index.js';
+export type { FormatOptions } from './format/index.js';
 export type { FieldSchema, SalesforceFieldType, FormulaType, SchemaInput } from './evaluator/schema.js';
 export { toFormulaType, SCHEMA_SELF_KEY } from './evaluator/schema.js';

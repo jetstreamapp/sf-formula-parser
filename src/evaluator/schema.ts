@@ -38,16 +38,7 @@ export type SalesforceFieldType =
  * Internal formula type used for validation.
  */
 export type FormulaType =
-  | 'number'
-  | 'string'
-  | 'boolean'
-  | 'date'
-  | 'datetime'
-  | 'time'
-  | 'geolocation'
-  | 'picklist'
-  | 'multipicklist'
-  | 'any';
+  'number' | 'string' | 'boolean' | 'date' | 'datetime' | 'time' | 'geolocation' | 'picklist' | 'multipicklist' | 'any';
 
 /**
  * Minimal field schema for type-aware validation.
