@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-08-16
+
 ### Added
 
 - **`formatFormula(formula, options?)`** — Prettier-style formatter for formulas. Normalizes whitespace and upper-cases function names and keywords (`TRUE`, `FALSE`, `NULL`, `NOT`) while preserving parentheses, comments, and string/number literals exactly as written; the output always parses to the same AST as the input. Calls that exceed `printWidth` (default `80`) break one argument per line, `CASE`/`IFS` value–result pairs stay together, and long operator chains break after each operator. Options: `printWidth`, `tabWidth`, `useTabs`
@@ -85,7 +87,8 @@ All notable changes to this project will be documented in this file.
 - Verified against live Salesforce org (47/47 FormulaEval API tests passing)
 - Added documentation site
 
-[Unreleased]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.1.2...HEAD
+[Unreleased]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.2.0...HEAD
+[2.2.0]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.1.2...2.2.0
 [2.1.2]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.1.1...2.1.2
 [2.1.1]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.1.0...2.1.1
 [2.1.0]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.0.0...2.1.0
