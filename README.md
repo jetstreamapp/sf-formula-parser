@@ -31,6 +31,7 @@ The implementation was built by studying the [open-source Salesforce formula eng
 - **Return type validation** — optionally declare the expected return type (`number`, `string`, `boolean`, `date`, `datetime`, `time`) and get Salesforce-accurate type mismatch errors
 - **Schema-aware validation** — pass `describeSObject().fields` directly to enable field existence checks and picklist restrictions
 - **Strict operator type checking** — arithmetic operators reject booleans and strings, matching Salesforce behavior
+- **Formatter** — `formatFormula` pretty-prints formulas Prettier-style without changing their meaning (parentheses, comments, and literals preserved)
 - **Zero dependencies** — pure TypeScript, compiles to ESM
 - **Browser-compatible** — no Node.js APIs required
 
@@ -88,6 +89,24 @@ import { createEvaluator, createDefaultRegistry } from '@jetstreamapp/sf-formula
 const evaluator = createEvaluator(createDefaultRegistry(), {
   record: { Status: 'Active', Amount: 100 },
 });
+```
+
+### `formatFormula(formula, options?)`
+
+Pretty-print a formula with consistent spacing and indentation. Formatting never changes meaning — parentheses, comments, and literals are preserved and the output parses to the same AST. Function names and keywords are upper-cased. Accepts `{ printWidth, tabWidth, useTabs }` (defaults `80`, `2`, `false`). Use `formatAST(node, options?)` to print an AST you built or transformed yourself.
+
+```typescript
+import { formatFormula } from '@jetstreamapp/sf-formula-parser';
+
+formatFormula('CASE(StageName,"Prospecting",1,"Qualification",2,"Needs Analysis",3,"Value Proposition",4,0)');
+// CASE(
+//   StageName,
+//   "Prospecting", 1,
+//   "Qualification", 2,
+//   "Needs Analysis", 3,
+//   "Value Proposition", 4,
+//   0
+// )
 ```
 
 ## Record Context
@@ -212,6 +231,7 @@ Formula String → Lexer → Tokens → Parser → AST → Evaluator → Formula
 - **Lexer** — tokenizes the formula string, handling string escapes, comments, and operators
 - **Parser** — hand-rolled Pratt parser (top-down operator precedence) producing a discriminated union AST
 - **Evaluator** — tree-walking evaluator with lazy argument evaluation and a pluggable function registry
+- **Formatter** — Prettier-style pretty-printer (`formatFormula` / `formatAST`) built on a small width-aware document printer; tree-shaken away when unused
 
 ## Error Handling
 

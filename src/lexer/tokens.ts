@@ -32,6 +32,8 @@ export enum TokenType {
   Comma = 'Comma', // ,
 
   // Special
+  /** Only emitted when the lexer is created with `preserveComments: true`. Value is the raw comment text including delimiters. */
+  Comment = 'Comment',
   EOF = 'EOF',
 }
 
@@ -40,4 +42,8 @@ export interface Token {
   value: string;
   line: number;
   column: number;
+  /** Zero-based character offset of the token's first character in the source. */
+  start: number;
+  /** Zero-based character offset just past the token's last character in the source. */
+  end: number;
 }

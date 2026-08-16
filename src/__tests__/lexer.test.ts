@@ -206,6 +206,41 @@ describe('Lexer', () => {
       const tokens = tokenize('1 + /* line1\nline2 */ 2');
       expect(tokens.length).toBe(4); // 1, +, 2, EOF
     });
+
+    it('emits Comment tokens with the raw text when preserveComments is set', () => {
+      const tokens = new Lexer('1 + /* line1\nline2 */ 2 /* end */', { preserveComments: true }).tokenize();
+      expect(tokens.map(t => t.type)).toEqual([
+        TokenType.NumberLiteral,
+        TokenType.Plus,
+        TokenType.Comment,
+        TokenType.NumberLiteral,
+        TokenType.Comment,
+        TokenType.EOF,
+      ]);
+      expect(tokens[2]).toMatchObject({ value: '/* line1\nline2 */', line: 1, column: 5, start: 4, end: 21 });
+      expect(tokens[3]).toMatchObject({ value: '2', line: 2, column: 10 });
+      expect(tokens[4]).toMatchObject({ value: '/* end */', line: 2, column: 12 });
+    });
+
+    it('still throws for unterminated comments when preserveComments is set', () => {
+      expect(() => new Lexer('1 /* oops', { preserveComments: true }).tokenize()).toThrow(LexerError);
+    });
+  });
+
+  describe('offsets', () => {
+    it('records start/end character offsets for every token', () => {
+      const source = 'IF( Name  = "a\\"b", 1.5, x)';
+      const tokens = tokenize(source);
+      const raw = tokens.map(t => source.slice(t.start, t.end));
+      expect(raw).toEqual(['IF', '(', 'Name', '=', '"a\\"b"', ',', '1.5', ',', 'x', ')', '']);
+      expect(tokens[tokens.length - 1]).toMatchObject({ type: TokenType.EOF, start: source.length, end: source.length });
+    });
+
+    it('records offsets for multi-character operators and keywords', () => {
+      const source = 'a <> b && NOT c || d >= true';
+      const tokens = tokenize(source);
+      expect(tokens.map(t => source.slice(t.start, t.end))).toEqual(['a', '<>', 'b', '&&', 'NOT', 'c', '||', 'd', '>=', 'true', '']);
+    });
   });
 
   describe('error cases', () => {

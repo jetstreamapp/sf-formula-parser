@@ -6,6 +6,7 @@ const sidebars: SidebarsConfig = {
     'api-reference',
     'record-context',
     'error-handling',
+    'formatting',
     {
       type: 'category',
       label: 'Functions',

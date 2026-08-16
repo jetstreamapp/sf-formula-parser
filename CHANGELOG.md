@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Added
+
+- **`formatFormula(formula, options?)`** — Prettier-style formatter for formulas. Normalizes whitespace and upper-cases function names and keywords (`TRUE`, `FALSE`, `NULL`, `NOT`) while preserving parentheses, comments, and string/number literals exactly as written; the output always parses to the same AST as the input. Calls that exceed `printWidth` (default `80`) break one argument per line, `CASE`/`IFS` value–result pairs stay together, and long operator chains break after each operator. Options: `printWidth`, `tabWidth`, `useTabs`
+- **`formatAST(node, options?)`** — print an `ASTNode` back to formula source with the same layout rules, inserting only the parentheses required by operator precedence
+- _Internal:_ the lexer can now preserve comments and tokens carry source offsets, and the formula grammar is shared by the AST and formatter parsers — groundwork for the formatter, with no change to the public API
+- `"sideEffects": false` in `package.json` so bundlers can tree-shake unused exports (such as the formatter)
+
 ## [2.1.2] - 2026-08-06
 
 ### Removed
