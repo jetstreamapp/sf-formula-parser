@@ -1,8 +1,8 @@
-#!/usr/bin/env npx tsx
+#!/usr/bin/env tsx
 /**
  * Formula verification script — compares our parser output against a real Salesforce org.
  *
- * Usage: npx tsx scripts/formula-verify/verify.ts
+ * Usage: npm run verify:formulas
  *
  * Prerequisites:
  *   - Authenticated SF org: sf org login web
@@ -55,7 +55,7 @@ async function main() {
 
   // 2. Generate Apex and write to temp file
   console.log('Generating Apex script...');
-  const apexCode = execSync(`npx tsx ${resolve(__dirname, 'generate-apex.ts')}`, {
+  const apexCode = execSync(`tsx ${resolve(__dirname, 'generate-apex.ts')}`, {
     cwd: projectRoot,
     encoding: 'utf-8',
   });

@@ -13,13 +13,13 @@
       "import": "./dist/esm/index.mjs"
     }
   },
-  "resolutions": {
+  "overrides": {
     "basic-ftp": "5.2.1"
   },
   "scripts": {
     "clean": "rm -rf ./dist/*",
     "prebuild": "npm run clean",
-    "build": "npm-run-all build:esm build:lwc build:cjs build:declarations",
+    "build": "npm run build:esm && npm run build:lwc && npm run build:cjs && npm run build:declarations",
     "build:esm": "esbuild src/index.ts --bundle --outfile=dist/esm/index.mjs --minify --format=esm --target=es2022 --banner:js='/*! @jetstreamapp/sf-formula-parser | MIT License | https://github.com/jetstreamapp/sf-formula-parser */'",
     "build:lwc": "esbuild src/index.ts --bundle --outfile=dist/lwc/index.js --format=esm --target=es2022 --banner:js='/*! @jetstreamapp/sf-formula-parser | MIT License | https://github.com/jetstreamapp/sf-formula-parser */'",
     "build:cjs": "esbuild src/index.ts --bundle --outfile=dist/cjs/index.js --minify --format=cjs --target=es2022 --banner:js='/*! @jetstreamapp/sf-formula-parser | MIT License | https://github.com/jetstreamapp/sf-formula-parser */'",
@@ -28,8 +28,15 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json",
-    "verify:formulas": "npx tsx scripts/formula-verify/verify.ts",
-    "release": "release-it"
+    "format": "oxfmt",
+    "format:check": "oxfmt --check",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "prepare": "git config core.hooksPath .githooks || true",
+    "verify:formulas": "tsx scripts/formula-verify/verify.ts",
+    "release": "node scripts/release.mjs",
+    "release:ci": "release-it",
+    "release:increment": "node scripts/derive-increment.mjs --explain"
   },
   "author": "Austin Turner <austin@getjetstream.app>",
   "license": "MIT",
@@ -39,19 +46,20 @@
   },
   "files": [
     "dist/**",
-    "LICENSE.txt",
+    "LICENSE",
     "README.md",
     "CHANGELOG.md"
   ],
   "devDependencies": {
     "@release-it/keep-a-changelog": "^8.0.0",
-    "esbuild": "^0.28.0",
-    "npm-run-all": "^4.1.5",
-    "prettier": "^3.9.6",
-    "release-it": "^21.0.1",
-    "tsx": "^4.23.9",
-    "typescript": "^6.0.3",
-    "vite": "^8.2.1",
+    "@types/node": "^25.9.5",
+    "@vitest/coverage-v8": "^4.1.10",
+    "esbuild": "^0.28.2",
+    "oxfmt": "^0.63.0",
+    "oxlint": "^1.78.0",
+    "release-it": "^21.0.2",
+    "tsx": "^4.23.12",
+    "typescript": "^7.0.2",
     "vitest": "^4.1.10"
   },
   "keywords": [
@@ -67,5 +75,9 @@
   "repository": {
     "type": "git",
     "url": "git+https://github.com/jetstreamapp/sf-formula-parser.git"
+  },
+  "allowScripts": {
+    "esbuild@0.28.2": true,
+    "fsevents@2.3.3": true
   }
 }

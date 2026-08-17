@@ -1,8 +1,9 @@
-#!/usr/bin/env npx tsx
+#!/usr/bin/env tsx
 /**
  * Generates an Apex anonymous script that evaluates formulas using FormulaEval API.
  *
- * Usage: npx tsx scripts/formula-verify/generate-apex.ts > scripts/formula-verify/verify.apex
+ * Run through npm so the local `tsx` is on PATH:
+ *   npm exec -- tsx scripts/formula-verify/generate-apex.ts > scripts/formula-verify/verify.apex
  */
 
 import { readFileSync } from 'fs';
