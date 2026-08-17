@@ -1,5 +1,5 @@
 import { useState, useCallback, type KeyboardEvent, type ReactNode } from 'react';
-import { evaluateFormula, FormulaError, isDateOnly } from '@jetstreamapp/sf-formula-parser';
+import { evaluateFormula, formatFormula, FormulaError, isDateOnly } from '@jetstreamapp/sf-formula-parser';
 import type { FormulaReturnType, SchemaInput } from '@jetstreamapp/sf-formula-parser';
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}:\d{2}(\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?$/;
@@ -56,6 +56,12 @@ const EXAMPLE_FORMULAS: ExampleFormula[] = [
     context: '{\n  "record": {\n    "Amount": 5000\n  }\n}',
   },
   {
+    label: 'Messy formatting',
+    formula:
+      '/* Messy on purpose! Click FORMAT above to clean this up.\n   Comments and your parentheses are always preserved. */\nif(and(ispickval(StageName,"Closed Won"),Amount>100000),"Big Deal",\n     if(Amount>50000,"Medium Deal",   /* everything else */ "Small Deal"))',
+    context: '{\n  "record": {\n    "StageName": "Closed Won",\n    "Amount": 250000\n  }\n}',
+  },
+  {
     label: 'Text functions',
     formula: 'UPPER(LEFT(Name, 3)) & "-" & TEXT(Amount)',
     context: '{\n  "record": {\n    "Name": "Acme Corp",\n    "Amount": 42\n  }\n}',
@@ -67,7 +73,7 @@ const EXAMPLE_FORMULAS: ExampleFormula[] = [
   },
   {
     label: 'CASE',
-    formula: 'CASE(Status, "New", "Just Created", "Active", "In Progress", "Closed", "Done", "Unknown")',
+    formula: 'CASE(\n  Status,\n  "New", "Just Created",\n  "Active", "In Progress",\n  "Closed", "Done",\n  "Unknown"\n)',
     context: '{\n  "record": {\n    "Status": "Active"\n  }\n}',
   },
   {
@@ -125,7 +131,7 @@ const EXAMPLE_FORMULAS: ExampleFormula[] = [
   },
   {
     label: 'Operator type error',
-    formula: 'true + true',
+    formula: 'TRUE + TRUE',
     context: '{\n  "record": {}\n}',
   },
 ];
@@ -211,6 +217,22 @@ const selectStyle = {
   cursor: 'pointer',
 } as const;
 
+/** Panel headers that carry a "Format" button on the right. */
+const panelHeaderStyle = { display: 'flex', justifyContent: 'space-between', alignItems: 'center' } as const;
+
+const formatButtonStyle = {
+  padding: '0.15rem 0.5rem',
+  borderRadius: '4px',
+  border: '1px solid var(--ifm-color-emphasis-300)',
+  background: 'transparent',
+  color: 'var(--ifm-color-emphasis-600)',
+  fontSize: '0.7rem',
+  cursor: 'pointer',
+  fontWeight: 600,
+  textTransform: 'uppercase',
+  letterSpacing: '0.03em',
+} as const;
+
 export default function FormulaPlayground({
   defaultFormula = 'IF(Amount > 1000, "Large Deal", "Small Deal")',
   defaultContext = '{\n  "record": {\n    "Amount": 5000\n  }\n}',
@@ -235,6 +257,14 @@ export default function FormulaPlayground({
     },
     [formula, context, returnType, schema],
   );
+
+  const handleFormatFormula = useCallback(() => {
+    try {
+      setFormula(formatFormula(formula));
+    } catch {
+      // Leave an unparseable formula alone — "Evaluate" is where the error belongs
+    }
+  }, [formula]);
 
   const handleFormatJson = useCallback(() => {
     try {
@@ -292,7 +322,16 @@ export default function FormulaPlayground({
       <div className="playground-container">
         <div>
           <div className="playground-panel">
-            <div className="playground-panel-header">Formula</div>
+            <div className="playground-panel-header" style={panelHeaderStyle}>
+              <span>Formula</span>
+              <button
+                onClick={handleFormatFormula}
+                style={formatButtonStyle}
+                title="Pretty-print the formula (comments and parentheses are preserved)"
+              >
+                Format
+              </button>
+            </div>
             <textarea
               className="playground-editor"
               value={formula}
@@ -307,23 +346,9 @@ export default function FormulaPlayground({
           </div>
 
           <div className="playground-panel" style={{ marginTop: '1rem' }}>
-            <div className="playground-panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="playground-panel-header" style={panelHeaderStyle}>
               <span>Record Context (JSON)</span>
-              <button
-                onClick={handleFormatJson}
-                style={{
-                  padding: '0.15rem 0.5rem',
-                  borderRadius: '4px',
-                  border: '1px solid var(--ifm-color-emphasis-300)',
-                  background: 'transparent',
-                  color: 'var(--ifm-color-emphasis-600)',
-                  fontSize: '0.7rem',
-                  cursor: 'pointer',
-                  fontWeight: 600,
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.03em',
-                }}
-              >
+              <button onClick={handleFormatJson} style={formatButtonStyle}>
                 Format
               </button>
             </div>
@@ -369,23 +394,9 @@ export default function FormulaPlayground({
             </div>
 
             <div className="playground-panel">
-              <div className="playground-panel-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="playground-panel-header" style={panelHeaderStyle}>
                 <span>Field Schema (JSON, optional)</span>
-                <button
-                  onClick={handleFormatSchema}
-                  style={{
-                    padding: '0.15rem 0.5rem',
-                    borderRadius: '4px',
-                    border: '1px solid var(--ifm-color-emphasis-300)',
-                    background: 'transparent',
-                    color: 'var(--ifm-color-emphasis-600)',
-                    fontSize: '0.7rem',
-                    cursor: 'pointer',
-                    fontWeight: 600,
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.03em',
-                  }}
-                >
+                <button onClick={handleFormatSchema} style={formatButtonStyle}>
                   Format
                 </button>
               </div>
