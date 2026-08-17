@@ -13,6 +13,7 @@ import { readFileSync, writeFileSync } from 'fs';
 import { execSync } from 'child_process';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { generateApex } from './generate-apex';
 
 // Resolve paths relative to the formula-parser project root
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -55,10 +56,9 @@ async function main() {
 
   // 2. Generate Apex and write to temp file
   console.log('Generating Apex script...');
-  const apexCode = execSync(`tsx ${resolve(__dirname, 'generate-apex.ts')}`, {
-    cwd: projectRoot,
-    encoding: 'utf-8',
-  });
+  // Called in-process rather than shelled out: interpolating a path into a shell command breaks on
+  // paths containing spaces and trips CodeQL's shell-command-from-environment rule
+  const apexCode = generateApex();
   const apexFile = resolve(__dirname, '_verify.apex');
   writeFileSync(apexFile, apexCode);
 

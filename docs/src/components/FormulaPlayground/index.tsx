@@ -325,9 +325,11 @@ export default function FormulaPlayground({
             <div className="playground-panel-header" style={panelHeaderStyle}>
               <span>Formula</span>
               <button
+                type="button"
                 onClick={handleFormatFormula}
                 style={formatButtonStyle}
                 title="Pretty-print the formula (comments and parentheses are preserved)"
+                aria-label="Format formula"
               >
                 Format
               </button>
@@ -348,7 +350,7 @@ export default function FormulaPlayground({
           <div className="playground-panel" style={{ marginTop: '1rem' }}>
             <div className="playground-panel-header" style={panelHeaderStyle}>
               <span>Record Context (JSON)</span>
-              <button onClick={handleFormatJson} style={formatButtonStyle}>
+              <button type="button" onClick={handleFormatJson} style={formatButtonStyle} aria-label="Format record context JSON">
                 Format
               </button>
             </div>
@@ -396,7 +398,7 @@ export default function FormulaPlayground({
             <div className="playground-panel">
               <div className="playground-panel-header" style={panelHeaderStyle}>
                 <span>Field Schema (JSON, optional)</span>
-                <button onClick={handleFormatSchema} style={formatButtonStyle}>
+                <button type="button" onClick={handleFormatSchema} style={formatButtonStyle} aria-label="Format field schema JSON">
                   Format
                 </button>
               </div>
