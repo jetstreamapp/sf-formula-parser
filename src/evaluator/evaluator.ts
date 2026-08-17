@@ -406,7 +406,6 @@ export class Evaluator {
 
     // Date + Date or DateTime + DateTime → error (Salesforce rejects this)
     if (isDate(left) && isDate(right)) {
-      const lType = isDateOnly(left) ? 'Date' : 'Date/Time';
       const rType = isDateOnly(right) ? 'Date' : 'Date/Time';
       throw new FormulaError(`Incorrect parameter type for operator '+'. Expected Number, received ${rType}`);
     }

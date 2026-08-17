@@ -1,6 +1,6 @@
 import { FunctionRegistry, type FunctionContext } from './registry.js';
 import { FormulaError } from '../evaluator/errors.js';
-import { isBlank, toNumber, toBoolean, toText } from '../evaluator/coercion.js';
+import { isBlank, toBoolean, toText } from '../evaluator/coercion.js';
 import type { FormulaValue, FormulaRecord } from '../evaluator/context.js';
 import { isFormulaValue, isFormulaRecord } from '../evaluator/context.js';
 
