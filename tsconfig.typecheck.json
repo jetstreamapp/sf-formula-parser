@@ -1,14 +1,16 @@
 {
+  // Typechecks the whole tree, including tests and scripts, which tsconfig.json excludes
+  // because it only emits declarations for the published `src/`.
+  "extends": "./tsconfig.json",
   "compilerOptions": {
     "noEmit": true,
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "isolatedModules": true,
-    "lib": ["esnext"],
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "skipLibCheck": true,
-    "target": "ES2022"
+    "emitDeclarationOnly": false,
+    "declaration": false,
+    "isolatedDeclarations": false,
+    "declarationDir": null,
+    "rootDir": ".",
+    "types": ["node"]
   },
-  "include": ["src/**/*.ts"]
+  "include": ["src/**/*.ts", "scripts/**/*.ts"],
+  "exclude": ["node_modules", "dist", "docs"]
 }

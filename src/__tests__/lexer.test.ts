@@ -10,10 +10,6 @@ function types(source: string) {
   return tokenize(source).map(t => t.type);
 }
 
-function values(source: string) {
-  return tokenize(source).map(t => t.value);
-}
-
 describe('Lexer', () => {
   describe('operators', () => {
     it.each([
@@ -266,7 +262,6 @@ describe('Lexer', () => {
 
   describe('whitespace and line/column tracking', () => {
     it('skips whitespace', () => {
-      const tokens = tokenize('  1  +  2  ');
       expect(types('  1  +  2  ')).toEqual([TokenType.NumberLiteral, TokenType.Plus, TokenType.NumberLiteral, TokenType.EOF]);
     });
 

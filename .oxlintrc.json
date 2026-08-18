@@ -1,0 +1,68 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  // typescript, unicorn, oxc and import apply everywhere. vitest is enabled only in the test
+  // override below, so its rules cannot fire on source files.
+  "plugins": ["typescript", "unicorn", "oxc", "import"],
+  // correctness, suspicious and perf catch defects, so they are errors. style and pedantic stay
+  // off because oxfmt owns layout and the rest is opinion rather than defect detection.
+  // restriction and nursery are off by default, listed so the whole policy reads in one place.
+  "categories": {
+    "correctness": "error",
+    "suspicious": "error",
+    "perf": "error",
+    "pedantic": "off",
+    "style": "off",
+    "restriction": "off",
+    "nursery": "off"
+  },
+  "rules": {
+    // Node's `__dirname` and the `eval_` test helper (which avoids shadowing the `eval` builtin)
+    // are both deliberate.
+    "no-underscore-dangle": "off"
+  },
+  "overrides": [
+    {
+      // The release and formula-verification scripts poll external state; each iteration must
+      // observe the result of the previous one, so the sequential awaits are deliberate.
+      "files": ["scripts/**"],
+      "rules": {
+        "no-await-in-loop": "off"
+      }
+    },
+    {
+      // Picklist values are boxed `String` objects carrying symbol markers, so `instanceof String`
+      // is the check - there is no primitive-safe alternative for a deliberately boxed value.
+      "files": ["src/evaluator/schema.ts"],
+      "rules": {
+        "unicorn/no-instanceof-builtins": "off"
+      }
+    },
+    {
+      "files": ["src/__tests__/**"],
+      "plugins": ["vitest"],
+      "rules": {
+        // Vitest's `expect(actual, message)` takes a second message argument; the rule assumes Jest.
+        "vitest/valid-expect": "off",
+        // The suites are table driven - titles come from the test-case records in test-cases.ts,
+        // which this rule wants to be string literals.
+        "vitest/valid-title": "off",
+        // Shared runners branch on the expected outcome but assert in every branch.
+        "vitest/no-conditional-expect": "off",
+        // `describe('X', () => runTestCases(Y))` - a concise arrow returning a void call.
+        "vitest/valid-describe-callback": "off",
+        // Table-driven error cases assert the error type, not a message.
+        "vitest/require-to-throw-message": "off",
+        // PI and SQRT2 appear as expected values in assertions.
+        "oxc/approx-constant": "off",
+        // Helpers are intentionally scoped to the block whose cases they serve.
+        "unicorn/consistent-function-scoping": "off"
+      }
+    }
+  ],
+  "ignorePatterns": [
+    "dist/**",
+    // docs/ is a separate npm project (Docusaurus, React) with its own dependencies and
+    // conventions - run its own tooling from inside that directory.
+    "docs/**"
+  ]
+}

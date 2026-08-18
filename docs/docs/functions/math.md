@@ -179,10 +179,6 @@ GEOLOCATION(37.7749, -122.4194)
 Calculates the distance between two locations. Unit is `"mi"` for miles or `"km"` for kilometers.
 
 ```
-DISTANCE(
-  GEOLOCATION(37.7749, -122.4194),
-  GEOLOCATION(34.0522, -118.2437),
-  "mi"
-)
+DISTANCE(GEOLOCATION(37.7749, -122.4194), GEOLOCATION(34.0522, -118.2437), "mi")
 // ~347.42 miles (San Francisco to Los Angeles)
 ```

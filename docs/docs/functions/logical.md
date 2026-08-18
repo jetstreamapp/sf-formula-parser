@@ -23,12 +23,7 @@ IF(Amount > 1000, "Large", "Small")
 Evaluates conditions in order, returns the value for the first true condition. An optional final unpaired argument is the default.
 
 ```
-IFS(
-  Score >= 90, "A",
-  Score >= 80, "B",
-  Score >= 70, "C",
-  "F"
-)
+IFS(Score >= 90, "A", Score >= 80, "B", Score >= 70, "C", "F")
 ```
 
 ### `CASE(expr, when1, then1, when2, then2, ..., default)`
@@ -36,11 +31,7 @@ IFS(
 Matches an expression against values and returns the corresponding result. The final argument is the default.
 
 ```
-CASE(Status,
-  "New", "Just Created",
-  "Active", "In Progress",
-  "Unknown"
-)
+CASE(Status, "New", "Just Created", "Active", "In Progress", "Unknown")
 ```
 
 ## Boolean Logic

@@ -144,7 +144,7 @@ Converts any value to its text representation.
 
 ```
 TEXT(42)          // "42"
-TEXT(true)        // "true"
+TEXT(TRUE)        // "true"
 TEXT(TODAY())     // date string
 ```
 

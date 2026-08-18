@@ -37,13 +37,6 @@ function addMonthsToDate(date: Date, months: number): Date {
   return d;
 }
 
-function formatDate(d: Date): string {
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(d.getUTCDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
 function isoWeekDate(date: Date): { isoYear: number; isoWeek: number } {
   // ISO 8601 week number algorithm
   const d = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
