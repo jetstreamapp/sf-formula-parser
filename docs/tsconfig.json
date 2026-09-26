@@ -2,7 +2,16 @@
   // This file is not used in compilation. It is here just for a nice editor experience.
   "extends": "@docusaurus/tsconfig",
   "compilerOptions": {
-    "baseUrl": "."
+    // TypeScript 7 removed `baseUrl`, which @docusaurus/tsconfig still sets. Unset it and redeclare
+    // `paths` here: without `baseUrl`, paths resolve relative to the config that declares them, and
+    // the inherited entry would point inside node_modules/@docusaurus/tsconfig.
+    "baseUrl": null,
+    "paths": {
+      "@site/*": ["./*"],
+      // Mirrors the webpack alias in docusaurus.config.ts, which serves the library from ../dist -
+      // run `npm run build` in the repository root first.
+      "@jetstreamapp/sf-formula-parser": ["../dist/types/index.d.ts"]
+    }
   },
   "exclude": [".docusaurus", "build"]
 }

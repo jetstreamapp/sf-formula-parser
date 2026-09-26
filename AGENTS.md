@@ -62,7 +62,9 @@ We maintain very high test coverage, add tests for any changes.
 Make sure all changes are represented in the documentation as appropriate.
 
 The `docs/` directory contains a Docusaurus site with its own `package-lock.json`. Run `npm install`
-then `npm start` inside `docs/` for local development.
+then `npm start` inside `docs/` for local development. The site imports the library from `../dist`
+rather than from npm, so run `npm run build` in the repository root before starting, building or
+typechecking (`npm run typecheck`) the docs.
 
 if you build this, an llm markdown file is available: `docs/build/llms-full.txt` - this could be a good way to learn about the entire project if you are working on a very large task.
 
