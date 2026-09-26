@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2.2.1] - 2026-09-26
+
 ### Changed
 
 - **Replaced Prettier with [oxfmt](https://oxc.rs/docs/guide/usage/formatter.html) and added
@@ -161,7 +163,8 @@ All notable changes to this project will be documented in this file.
 - Verified against live Salesforce org (47/47 FormulaEval API tests passing)
 - Added documentation site
 
-[Unreleased]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.2.0...HEAD
+[Unreleased]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.2.1...HEAD
+[2.2.1]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.2.0...2.2.1
 [2.2.0]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.1.2...2.2.0
 [2.1.2]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.1.1...2.1.2
 [2.1.1]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.1.0...2.1.1
