@@ -43,11 +43,17 @@ All notable changes to this project will be documented in this file.
   `scripts/derive-increment.mjs`, `scripts/release.mjs`, `.githooks/pre-commit` and the `ci`,
   `release` and `changelog` workflows are identical in both repositories, as are `.oxfmtrc.json` and
   `.claude/settings.json`
-- **Upgraded dependencies** — TypeScript 7, and the latest esbuild, tsx and release-it. `npm-run-all`
-  was dropped in favour of chaining the build steps with `&&`, `prettier` and `vite` are gone, and
-  `@types/node` and `@vitest/coverage-v8` were added so `npm run test:coverage` runs without
-  prompting to install a provider. `vitest.config.ts` became `vitest.config.mts`, since it is ESM
-  while the root package is CommonJS
+- **Upgraded dependencies** — TypeScript 7, Vitest 5, `@types/node` 26, and the latest esbuild, tsx,
+  oxfmt, oxlint and release-it. `npm-run-all` was dropped in favour of chaining the build steps with
+  `&&`, `prettier` and `vite` are gone, and `@types/node` and `@vitest/coverage-v8` were added so
+  `npm run test:coverage` runs without prompting to install a provider. `vitest.config.ts` became
+  `vitest.config.mts`, since it is ESM while the root package is CommonJS. The docs site moved to
+  React 19.3 and `docusaurus-plugin-llms` 0.6
+- **`npm run typecheck` in `docs/` passes.** TypeScript 7 removed `baseUrl`, which
+  `@docusaurus/tsconfig` still sets, so `tsc` stopped at the config before checking any file. The docs
+  `tsconfig.json` now unsets it and declares `paths` itself, adding one for
+  `@jetstreamapp/sf-formula-parser` that mirrors the webpack alias serving the library from `../dist`
+  — without it the playground's import of the library did not resolve
 - **Enabled `isolatedDeclarations`, and `npm run typecheck` now covers `scripts/` as well as `src/`.**
   The source already satisfied `isolatedDeclarations`, so this only locks the property in — every
   export keeps an explicit type, which keeps declaration emit independent of type inference.
@@ -65,7 +71,9 @@ All notable changes to this project will be documented in this file.
   import, plus an unused local in the `Date + Date` error path of the evaluator. No behavior change —
   the error message for adding two dates already reported only the right-hand operand's type
 - The `basic-ftp` version pin was declared under `resolutions`, a Yarn field that npm ignores, so it
-  was never applied. It is now an `overrides` entry
+  was never applied. The pin is gone rather than moved to `overrides`: the `release-it` dependency
+  chain now requires `basic-ftp@^5.3.1` on its own, and the pinned `5.2.1` is itself affected by
+  three high-severity advisories, so forcing it would reintroduce them
 - `files` in `package.json` listed `LICENSE.txt`, but the file is named `LICENSE`, so the entry
   matched nothing. The license still shipped — npm always includes it — but the manifest now names
   the file that exists
