@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2.2.2] - 2026-10-10
+
 ### Changed
 
 - **Upgraded dependencies** — Vitest 5.0.3, `@types/node` 26.6.4, oxfmt 0.72, oxlint 1.87 and
@@ -173,7 +175,8 @@ All notable changes to this project will be documented in this file.
 - Verified against live Salesforce org (47/47 FormulaEval API tests passing)
 - Added documentation site
 
-[Unreleased]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.2.1...HEAD
+[Unreleased]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.2.2...HEAD
+[2.2.2]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.2.1...2.2.2
 [2.2.1]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.2.0...2.2.1
 [2.2.0]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.1.2...2.2.0
 [2.1.2]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.1.1...2.1.2
