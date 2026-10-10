@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- **Upgraded dependencies** — Vitest 5.0.3, `@types/node` 26.6.4, oxfmt 0.72, oxlint 1.87 and
+  release-it 21.1.1 in the root; `@jetstreamapp/soql-parser-js` 8.1.1 and `docusaurus-plugin-llms`
+  0.6.1 in the docs site, with every transitive dependency brought to the newest version its parent
+  allows. No code changes were needed. The advisories `npm audit` still reports have no in-range
+  fix: in the root a new `basic-ftp` ReDoS advisory covers every release `get-uri` accepts, and in
+  the docs site each fix is either a major that Docusaurus 3.10 has not taken, a version
+  `docusaurus-plugin-llms` pins exactly, or, for `braces` and `sprintf-js`, not published at all
+
 ## [2.2.1] - 2026-09-26
 
 ### Changed
