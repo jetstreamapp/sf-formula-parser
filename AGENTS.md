@@ -111,6 +111,8 @@ Release commits pass `--no-verify`: they are machine generated from already chec
 hook failing mid-release would abort after the npm publish.
 
 `scripts/derive-increment.mjs`, `scripts/release.mjs`, `.githooks/pre-commit` and the
-`.github/workflows/ci.yml`, `release.yml` and `changelog.yml` workflows are shared verbatim
-with [soql-parser-js](https://github.com/jetstreamapp/soql-parser-js) — keep the copies in sync when
-changing them.
+`.github/workflows/ci.yml`, `release.yml` and `changelog.yml` workflows are shared verbatim with
+[soql-parser-js](https://github.com/jetstreamapp/soql-parser-js),
+[simple-excel](https://github.com/jetstreamapp/simple-excel) and
+[simple-xml](https://github.com/jetstreamapp/simple-xml) — keep every copy in sync when changing
+them.
