@@ -36,9 +36,11 @@ sequential polling loop in `scripts/`, and the data-driven Vitest suites in `src
 
 ## Commit hook
 
-A `pre-commit` hook in `.githooks/` runs both the format check and oxlint against staged files and
-**blocks the commit** if either fails, so skipping those steps will stop the commit rather than slip
-through. The hook is wired up by the `prepare` script (`git config core.hooksPath .githooks`) on
+A `pre-commit` hook in `.githooks/` runs both the format check and oxlint against the whole codebase
+and **blocks the commit** if either fails, so skipping those steps will stop the commit rather than
+slip through. It checks a snapshot of the index, not the working tree, so it sees exactly what the
+commit will contain: a file formatted on disk but not re-staged still blocks, and unstaged edits
+never do. The hook is wired up by the `prepare` script (`git config core.hooksPath .githooks`) on
 `npm install`. Emergency bypass: `git commit --no-verify`.
 
 ## Types
@@ -109,6 +111,8 @@ Release commits pass `--no-verify`: they are machine generated from already chec
 hook failing mid-release would abort after the npm publish.
 
 `scripts/derive-increment.mjs`, `scripts/release.mjs`, `.githooks/pre-commit` and the
-`.github/workflows/ci.yml`, `release.yml` and `changelog.yml` workflows are shared verbatim
-with [soql-parser-js](https://github.com/jetstreamapp/soql-parser-js) — keep the copies in sync when
-changing them.
+`.github/workflows/ci.yml`, `release.yml` and `changelog.yml` workflows are shared verbatim with
+[soql-parser-js](https://github.com/jetstreamapp/soql-parser-js),
+[simple-excel](https://github.com/jetstreamapp/simple-excel) and
+[simple-xml](https://github.com/jetstreamapp/simple-xml) — keep every copy in sync when changing
+them.
