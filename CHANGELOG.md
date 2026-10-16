@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- **Resolved every fixable `npm audit` advisory with `overrides`** — no code changes were needed.
+  In the root, `basic-ftp` is pinned to `^6.2.3` under release-it: `get-uri` still accepts only
+  5.x, and 6.2.1 is the first release with the directory-listing ReDoS fix (GHSA-c475-qrg2-pj4r),
+  with 6.2.2 and 6.2.3 closing two further advisories. In the docs site, `tinypool` moves to 2.x,
+  `serialize-javascript` to 7.x, `postcss-selector-parser` to 7.x and `uuid` to 11.x, and the
+  `minimatch` and `yaml` releases that `docusaurus-plugin-llms` pins exactly move to their patched
+  versions. Each major jump either only drops old Node versions or is the same bump the upstream
+  consumer has already taken, and the built site is byte-for-byte identical. `braces` and
+  `sprintf-js` still have no patched release and stay flagged. The overrides and the conditions
+  for removing them are recorded in `AGENTS.md`
+
 ## [2.2.2] - 2026-10-10
 
 ### Changed
