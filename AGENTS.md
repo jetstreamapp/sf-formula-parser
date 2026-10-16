@@ -70,6 +70,48 @@ typechecking (`npm run typecheck`) the docs.
 
 if you build this, an llm markdown file is available: `docs/build/llms-full.txt` - this could be a good way to learn about the entire project if you are working on a very large task.
 
+## Dependency overrides
+
+`npm audit` is kept clean with `overrides` in `package.json` (root and `docs/`) wherever a
+transitive dependency has a patched release that its parent does not yet accept. Every override is
+a stopgap, so when the parent moves onto the patched range itself, drop the override rather than
+leaving it to pin the tree forever. Run `npm audit` in both the root and `docs/` when upgrading
+dependencies, and remember that a bare override applies to the whole tree. When another copy of the
+package must stay on an older major, key the override by range (`"minimatch@^9.0.0": "^9.0.7"`):
+npm then only rewrites dependency edges whose declared range intersects the key. Do not nest the
+override under the parent package instead — npm 11 hoisted the overridden copy and handed it to
+`serve-handler` as well, which would have broken `docusaurus serve`.
+
+Root:
+
+- `basic-ftp` → `^6.2.3`. ReDoS advisories (GHSA-c475-qrg2-pj4r and two later ones); `get-uri`,
+  reached through release-it → proxy-agent → pac-proxy-agent, still accepts only 5.x. The only 6.0
+  breaking change disables separate FTP transfer hosts, which `get-uri` never uses. Remove once
+  `get-uri` depends on `basic-ftp@^6.2.3` or later.
+
+Docs site:
+
+- `minimatch@^9.0.0` → `^9.0.7` and `yaml@^2.0.0` → `^2.8.3`, for the exact pins in
+  `docusaurus-plugin-llms`. The fixes are patch releases in the same major. Keyed by range because
+  `serve-handler` needs `minimatch` 3.x, whose CommonJS entry is a function where 9.x exports an
+  object. Remove once the plugin's own pins reach those versions.
+- `tinypool` → `^2.1.2`. Prototype-pollution advisories; 2.0 only dropped Node 18, and the
+  Docusaurus 4 canary already depends on `^2.1.2` with the same SSG worker code. Remove once
+  `@docusaurus/core` does the same.
+- `serialize-javascript` → `^7.0.5`. RCE and CPU-exhaustion advisories; 7.0 only requires Node 20,
+  and the current copy-webpack-plugin and css-minimizer-webpack-plugin releases already use 7.x.
+  Remove once `@docusaurus/bundler` takes versions of those plugins that do.
+- `postcss-selector-parser` → `^7.1.6`. CPU-exhaustion advisory with no fix in 6.x; the cssnano 7
+  plugins moved from 6.x to 7.x in a patch release, and the rest of the tree already uses 7.1.6.
+  Remove once `@docusaurus/cssnano-preset` moves to cssnano 7 or later.
+- `uuid` → `^11.1.1`. Bounds-check advisory; 11 keeps the CommonJS entry point that `sockjs`
+  requires, whereas 12 drops it, so do not raise this to 12.x. Remove once `sockjs` depends on
+  `uuid@^11.1.1` or later, or once Docusaurus moves to webpack-dev-server 6, which no longer uses
+  `sockjs`.
+
+`braces` and `sprintf-js` in the docs site have no patched release at all, so they stay flagged
+until one is published.
+
 ## Releasing
 
 Releases are cut from `main` by CI, kicked off from your terminal:
