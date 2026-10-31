@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Fixed
+
+- **`LPAD` / `RPAD` no longer hang on an empty pad string** — `LPAD("a", 5, "")`, or a pad taken from
+  a record field that is empty, looped forever because the loop appended nothing on each pass. A
+  blank pad string now behaves like an omitted one (a single space), matching how a null pad string
+  was already treated. A security scan found this one; it blocked the evaluating thread permanently
+  from a tiny input
+- **`LPAD` / `RPAD` cap the result length at 65,536 characters** — the requested length was used
+  unbounded, so a formula or numeric field of `1e9` (or `Infinity`) tried to build a string of that
+  size and could exhaust memory. A longer request now throws a `FormulaError`. Results up to the cap
+  are unchanged
+- **`formatFormula` no longer stalls on a string literal or comment with a very long run of spaces
+  or tabs** — the trailing-whitespace trim used a regular expression that is quadratic on such a
+  chunk (a 200 KB literal took over twenty seconds). It is now a single backward scan
+- **`formatFormula` flattens long same-precedence operator chains in linear time** — `printBinary`
+  prepended to two arrays on every step; it now appends and reverses once. Output is identical
+
 ### Changed
 
 - **Resolved every fixable `npm audit` advisory with `overrides`** — no code changes were needed.

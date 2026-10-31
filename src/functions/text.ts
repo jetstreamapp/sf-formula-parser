@@ -65,6 +65,29 @@ function jsEncode(text: string): string {
   return text.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/'/g, "\\'").replace(/\n/g, '\\n').replace(/\r/g, '\\r');
 }
 
+/**
+ * Longest result `LPAD` / `RPAD` will build. The requested length comes straight from the formula
+ * or a record field, so without a ceiling a value like `1e9` would try to allocate a gigabyte-scale
+ * string and stall or kill the host process.
+ */
+const MAX_PAD_LENGTH = 65_536;
+
+/**
+ * Build the padding for `LPAD` / `RPAD`: `padStr` repeated and cut to exactly `needed` characters.
+ * A blank pad string behaves like an omitted one (a single space) — the previous loop never made
+ * progress on `''` and hung forever.
+ */
+function buildPad(padStr: string, needed: number): string {
+  const unit = padStr === '' ? ' ' : padStr;
+  return unit.repeat(Math.ceil(needed / unit.length)).substring(0, needed);
+}
+
+function assertPadLength(fn: string, length: number): void {
+  if (length > MAX_PAD_LENGTH) {
+    throw new FormulaError(`Result of function '${fn}()' is too long. Maximum length is ${MAX_PAD_LENGTH} characters`);
+  }
+}
+
 export function registerTextFunctions(registry: FunctionRegistry): void {
   // 1. BEGINS(text, search)
   registry.register('BEGINS', (ctx: FunctionContext): FormulaValue => {
@@ -243,12 +266,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
     if (length === null || length <= 0) return null;
     const padStr = ctx.args.length > 2 ? (toText(ctx.evaluate(ctx.args[2]!)) ?? ' ') : ' ';
     if (text.length >= length) return text.substring(0, length);
-    const needed = length - text.length;
-    let pad = '';
-    while (pad.length < needed) {
-      pad += padStr;
-    }
-    return pad.substring(0, needed) + text;
+    assertPadLength('LPAD', length);
+    return buildPad(padStr, length - text.length) + text;
   });
 
   // 18. MID(text, start, length)
@@ -291,12 +310,8 @@ export function registerTextFunctions(registry: FunctionRegistry): void {
     if (length === null || length <= 0) return null;
     const padStr = ctx.args.length > 2 ? (toText(ctx.evaluate(ctx.args[2]!)) ?? ' ') : ' ';
     if (text.length >= length) return text.substring(0, length);
-    const needed = length - text.length;
-    let pad = '';
-    while (pad.length < needed) {
-      pad += padStr;
-    }
-    return text + pad.substring(0, needed);
+    assertPadLength('RPAD', length);
+    return text + buildPad(padStr, length - text.length);
   });
 
   // 21. SUBSTITUTE(text, old, new)

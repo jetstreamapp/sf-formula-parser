@@ -95,18 +95,22 @@ function printBinary(node: FmtBinary): Doc {
 
   // Flatten the left-nested chain of operators with the same precedence. A left operand that is
   // parenthesized, higher precedence, or carries a trailing comment ends the chain and is printed as its own unit.
+  // The walk goes right to left, so collect with `push` and reverse once at the end: `unshift` on
+  // every step would make a long chain quadratic.
   let current: FmtBinary = node;
   while (true) {
-    operands.unshift(printNode(current.right));
-    operators.unshift(current.operator);
+    operands.push(printNode(current.right));
+    operators.push(current.operator);
     const left = current.left;
     if (left.kind === 'binary' && left.precedence === node.precedence && left.trailing.length === 0) {
       current = left;
     } else {
-      operands.unshift(printNode(left));
+      operands.push(printNode(left));
       break;
     }
   }
+  operands.reverse();
+  operators.reverse();
 
   const rest: Doc[] = [];
   operators.forEach((operator, index) => {
