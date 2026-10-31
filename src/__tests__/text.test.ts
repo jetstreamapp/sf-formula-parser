@@ -230,6 +230,25 @@ describe('LPAD', () => {
   it('returns null for length <= 0', () => {
     expect(evaluateFormula('LPAD("abc", 0)', ctx)).toBe(null);
   });
+  it('treats an empty pad string like the default space instead of looping forever', () => {
+    expect(evaluateFormula('LPAD("abc", 6, "")', ctx)).toBe('   abc');
+  });
+  it('treats an empty pad string from a record field the same way', () => {
+    expect(evaluateFormula('LPAD("abc", 5, Pad__c)', { record: { Pad__c: '' } })).toBe('  abc');
+  });
+  it('treats a null pad string like the default space', () => {
+    expect(evaluateFormula('LPAD("abc", 5, null)', ctx)).toBe('  abc');
+  });
+  it('accepts a length up to the maximum', () => {
+    expect(evaluateFormula('LPAD("a", 65536, "b")', ctx)).toBe('b'.repeat(65535) + 'a');
+  });
+  it('throws a FormulaError when the length exceeds the maximum', () => {
+    expect(() => evaluateFormula('LPAD("a", 65537, "b")', ctx)).toThrow(FormulaError);
+    expect(() => evaluateFormula('LPAD("a", 1000000000, "ab")', ctx)).toThrow(/too long/);
+  });
+  it('throws a FormulaError for an infinite length', () => {
+    expect(() => evaluateFormula('LPAD("a", Len__c, "b")', { record: { Len__c: Infinity } })).toThrow(FormulaError);
+  });
 });
 
 describe('MID', () => {
@@ -277,6 +296,25 @@ describe('RPAD', () => {
   });
   it('returns null for null text', () => {
     expect(evaluateFormula('RPAD(null, 5)', ctx)).toBe(null);
+  });
+  it('treats an empty pad string like the default space instead of looping forever', () => {
+    expect(evaluateFormula('RPAD("abc", 6, "")', ctx)).toBe('abc   ');
+  });
+  it('treats an empty pad string from a record field the same way', () => {
+    expect(evaluateFormula('RPAD("abc", 5, Pad__c)', { record: { Pad__c: '' } })).toBe('abc  ');
+  });
+  it('treats a null pad string like the default space', () => {
+    expect(evaluateFormula('RPAD("abc", 5, null)', ctx)).toBe('abc  ');
+  });
+  it('accepts a length up to the maximum', () => {
+    expect(evaluateFormula('RPAD("a", 65536, "b")', ctx)).toBe('a' + 'b'.repeat(65535));
+  });
+  it('throws a FormulaError when the length exceeds the maximum', () => {
+    expect(() => evaluateFormula('RPAD("a", 65537, "b")', ctx)).toThrow(FormulaError);
+    expect(() => evaluateFormula('RPAD("a", 1000000000, "ab")', ctx)).toThrow(/too long/);
+  });
+  it('throws a FormulaError for an infinite length', () => {
+    expect(() => evaluateFormula('RPAD("a", Len__c, "b")', { record: { Len__c: Infinity } })).toThrow(FormulaError);
   });
 });
 

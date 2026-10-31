@@ -175,9 +175,12 @@ function columnsOf(text: string, tabWidth: number): number {
 function trimTrailingWhitespace(out: string[]): void {
   while (out.length > 0) {
     const last = out[out.length - 1]!;
-    const trimmed = last.replace(/[ \t]+$/, '');
-    if (trimmed.length > 0) {
-      out[out.length - 1] = trimmed;
+    // Scan back from the end rather than using `/[ \t]+$/`: that regex retries from every position
+    // in a long whitespace run, which is quadratic when the chunk is a verbatim string literal or comment.
+    let end = last.length;
+    while (end > 0 && (last.charCodeAt(end - 1) === 32 || last.charCodeAt(end - 1) === 9)) end--;
+    if (end > 0) {
+      out[out.length - 1] = end === last.length ? last : last.slice(0, end);
       return;
     }
     out.pop();

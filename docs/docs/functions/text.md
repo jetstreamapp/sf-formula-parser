@@ -75,19 +75,21 @@ INITCAP("hello world")  // "Hello World"
 
 ### `LPAD(text, length, padString?)`
 
-Left-pads the text to the specified length.
+Left-pads the text to the specified length. An empty or null `padString` is treated as a single space. A `length` above 65,536 throws a `FormulaError` rather than building the string.
 
 ```
 LPAD("42", 5, "0")  // "00042"
 LPAD("hi", 5)       // "   hi"
+LPAD("hi", 5, "")   // "   hi"
 ```
 
 ### `RPAD(text, length, padString?)`
 
-Right-pads the text to the specified length.
+Right-pads the text to the specified length. An empty or null `padString` is treated as a single space. A `length` above 65,536 throws a `FormulaError` rather than building the string.
 
 ```
 RPAD("hi", 5, ".")  // "hi..."
+RPAD("hi", 5, "")   // "hi   "
 ```
 
 ### `SUBSTITUTE(text, oldString, newString)`

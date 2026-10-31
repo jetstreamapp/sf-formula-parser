@@ -222,6 +222,34 @@ describe('formatFormula', () => {
     it('does not flatten across parentheses', () => {
       expect(formatFormula('a & (b & c)', { printWidth: 5 })).toBe(lines('a &', '  (', '    b &', '      c', '  )'));
     });
+
+    it('formats a very long same-precedence chain in linear time', () => {
+      const terms = 100_000;
+      const formula = Array.from({ length: terms }, () => '1').join(' + ');
+      const result = formatFormula(formula, { printWidth: 80 });
+      const resultLines = result.split('\n');
+      expect(resultLines).toHaveLength(terms);
+      expect(resultLines[0]).toBe('1 +');
+      expect(resultLines[1]).toBe('  1 +');
+      expect(resultLines[terms - 1]).toBe('  1');
+    });
+  });
+
+  describe('trailing whitespace', () => {
+    it('trims whitespace before a line break but leaves whitespace inside a literal alone', () => {
+      expect(formatFormula('F("a  ", b)', { printWidth: 5 })).toBe(lines('F(', '  "a  ",', '  b', ')'));
+    });
+
+    it('formats a string literal holding a very long whitespace run in linear time', () => {
+      const literal = '"' + ' '.repeat(200_000) + 'x"';
+      expect(formatFormula(`F(${literal})`)).toBe(lines('F(', `  ${literal}`, ')'));
+    });
+
+    it('formats a block comment holding a very long whitespace run in linear time', () => {
+      const comment = '/*' + '\t'.repeat(200_000) + 'x */';
+      const result = formatFormula(`F(a, ${comment} b)`);
+      expect(result).toContain(comment);
+    });
   });
 
   describe('unary expressions', () => {
