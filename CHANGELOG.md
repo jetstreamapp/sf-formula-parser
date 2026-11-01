@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- **Resolved the new `npm audit` and Dependabot advisories** — no code changes were needed. In the
+  root, `release-it` moves to `^21.1.2`, which pulls in `undici` 7.30.1 (eight advisories including
+  GHSA-xjj6-f33q-929c), and the lockfile picks up `ip-address` 10.7.5 (GHSA-rxp7-6hxx-x8q5). The
+  docs site's `serialize-javascript` override rises to `^7.1.3` (GHSA-m5mm-p8h7-m29v), and its
+  lockfile refresh patches `fast-uri`, `follow-redirects`, `joi`, `body-parser` and `qs`. `deepmerge`
+  and `minimatch` in the docs site remain flagged with no usable patched release
+
 ## [2.2.3] - 2026-10-31
 
 ### Fixed
