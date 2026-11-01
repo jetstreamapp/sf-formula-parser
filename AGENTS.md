@@ -98,9 +98,10 @@ Docs site:
 - `tinypool` → `^2.1.2`. Prototype-pollution advisories; 2.0 only dropped Node 18, and the
   Docusaurus 4 canary already depends on `^2.1.2` with the same SSG worker code. Remove once
   `@docusaurus/core` does the same.
-- `serialize-javascript` → `^7.0.5`. RCE and CPU-exhaustion advisories; 7.0 only requires Node 20,
-  and the current copy-webpack-plugin and css-minimizer-webpack-plugin releases already use 7.x.
-  Remove once `@docusaurus/bundler` takes versions of those plugins that do.
+- `serialize-javascript` → `^7.1.3`. RCE, CPU-exhaustion and `</script` XSS (GHSA-m5mm-p8h7-m29v)
+  advisories; 7.0 only requires Node 20, and the current copy-webpack-plugin and
+  css-minimizer-webpack-plugin releases already use 7.x. Remove once `@docusaurus/bundler` takes
+  versions of those plugins that accept `^7.1.3` or later.
 - `postcss-selector-parser` → `^7.1.6`. CPU-exhaustion advisory with no fix in 6.x; the cssnano 7
   plugins moved from 6.x to 7.x in a patch release, and the rest of the tree already uses 7.1.6.
   Remove once `@docusaurus/cssnano-preset` moves to cssnano 7 or later.
@@ -109,8 +110,14 @@ Docs site:
   `uuid@^11.1.1` or later, or once Docusaurus moves to webpack-dev-server 6, which no longer uses
   `sockjs`.
 
-`braces` and `sprintf-js` in the docs site have no patched release at all, so they stay flagged
-until one is published.
+Two docs-site advisories have no patched release in a usable line, so they stay flagged until one
+is published:
+
+- `deepmerge` (GHSA-gcqx-w48m-w2h4) affects every release from 4.2.0, reached through
+  `@svgr/plugin-svgo`.
+- `minimatch` (GHSA-g3hv-75wg-m249) is fixed only in 11.0.1. `serve-handler` needs 3.x and
+  `docusaurus-plugin-llms` pins 9.x, so a cross-major override would risk the same breakage
+  described above. Both only see glob patterns from our own config.
 
 ## Releasing
 
