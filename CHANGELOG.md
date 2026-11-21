@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [2.2.4] - 2026-11-21
+
 ### Changed
 
 - **Resolved the new `npm audit` and Dependabot advisories** — no code changes were needed. In the
@@ -216,7 +218,8 @@ All notable changes to this project will be documented in this file.
 - Verified against live Salesforce org (47/47 FormulaEval API tests passing)
 - Added documentation site
 
-[Unreleased]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.2.3...HEAD
+[Unreleased]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.2.4...HEAD
+[2.2.4]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.2.3...2.2.4
 [2.2.3]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.2.2...2.2.3
 [2.2.2]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.2.1...2.2.2
 [2.2.1]: https://github.com/jetstreamapp/sf-formula-parser/compare/2.2.0...2.2.1
