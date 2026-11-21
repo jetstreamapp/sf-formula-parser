@@ -52,7 +52,7 @@
     "@types/node": "^26.6.4",
     "@vitest/coverage-v8": "^5.0.3",
     "esbuild": "^0.28.2",
-    "oxfmt": "^0.72.0",
+    "oxfmt": "^0.79.0",
     "oxlint": "^1.87.0",
     "release-it": "^21.1.2",
     "tsx": "^4.23.15",
